@@ -127,6 +127,17 @@
 
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring.boot-version}</version>
@@ -151,6 +162,50 @@
         <profile>
             <id>k8s</id>
             <properties>
+                <jkube.docker.push.registry>quay.io/erouvas</jkube.docker.push.registry>
+                <jkube.docker.pull.registry>quay.io/erouvas</jkube.docker.pull.registry>
+            </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.eclipse.jkube</groupId>
+                        <artifactId>kubernetes-maven-plugin</artifactId>
+                        <version>${jkube-maven-plugin.version}</version>
+
+                        <configuration>
+                            <resources>
+                                <controller>
+                                    <replicas>2</replicas>
+                                    <controllerName>${project.artifactId}</controllerName>
+                                </controller>
+                            </resources>
+
+                            <enricher>
+                                <config>
+                                    <jkube-service>
+                                        <name>${project.artifactId}</name>
+                                        <type>LoadBalancer</type>
+                                        <port>${application_port}:${application_port}</port>
+                                        <multiPort>false</multiPort>
+                                        <expose>true</expose>
+                                    </jkube-service>
+                                </config>
+                            </enricher>
+                        </configuration>
+
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>k8s-ssl</id>
+            <properties>
+                <!-- for HTTPS -->
+                <jkube.enricher.jkube-openshift-route.tlsTermination>passthrough</jkube.enricher.jkube-openshift-route.tlsTermination>
+                <jkube.enricher.jkube-openshift-route.tlsInsecureEdgeTerminationPolicy>None</jkube.enricher.jkube-openshift-route.tlsInsecureEdgeTerminationPolicy>
+                <!-- define image registry -->
                 <jkube.docker.push.registry>quay.io/erouvas</jkube.docker.push.registry>
                 <jkube.docker.pull.registry>quay.io/erouvas</jkube.docker.pull.registry>
             </properties>
