@@ -1,0 +1,260 @@
+:icons: font
+:source-highlighter: prettify
+:project_id: app-onboard
+:toc:
+
+= Developer friendly application OnBoarding to Kubernetes and Openshift clusters
+
+== Introduction
+
+The sample SpringBoot Camel project that is part of this repo serves as a very simple example of application onboarding to kubernetes clusters and openshift. When deployed it will display a "Hello World" message along with a timestamp and an identifier from the pod it is being executed.
+
+Deploying to a couple of kubernetes clusters, specifically to https://docs.k3s.io/[K3s - Lightweight Kubernetes] and https://kind.sigs.k8s.io/[kind], as well as an Openshift one using the https://eclipse.dev/jkube/docs/[Eclipse JKube]. Deployment to Openshift will also be using the `s2i` method.
+
+Although it is not required by the application used as an example, SSL termination and PVC will be briefly mentioned for the https://eclipse.dev/jkube/docs/[jkube] deployment approach.
+
+== Creating the simple SpringBoot Camel-based project
+
+There are many ways to create such a project, any can be used. Suitable projects can be found at the https://github.com/apache/camel-spring-boot-examples[SpringBoot Examples] or can be generated from https://mvnrepository.com/artifact/org.apache.camel.archetypes/camel-archetype-spring-boot[maven archetypes]
+
+Using a Red Hat maven archetype would include an `openshift` profile using https://eclipse.dev/jkube/docs/[Eclipse JKube] maven plugin to facilitate openshift deployments, for example:
+
+----
+mvn archetype:generate \
+ -DarchetypeGroupId=org.apache.camel.archetypes \
+ -DarchetypeArtifactId=camel-archetype-spring-boot \
+ -DarchetypeVersion=4.0.0.redhat-00045 \
+ -DgroupId=com.example \
+ -DartifactId=camel-starter-rh \
+ -Dversion=1.0-SNAPSHOT \
+ -DinteractiveMode=false
+----
+
+A generic archetype can also be used, but the `jkube` portion and the relevant profiles would need to be added manually to the `pom.xml`. For example:
+
+----
+mvn archetype:generate \
+ -DarchetypeGroupId=org.apache.camel.archetypes \
+ -DarchetypeArtifactId=camel-archetype-spring-boot \
+ -DarchetypeVersion=4.4.0 \
+ -DgroupId=com.example \
+ -DartifactId=camel-starter \
+ -Dversion=1.0-SNAPSHOT \
+ -DinteractiveMode=false
+----
+
+== Structure of the pom.xml
+
+To facilitate deployment to clusters as well as standalone execution two https://maven.apache.org/guides/introduction/introduction-to-profiles.html[maven profiles] have been created.
+
+* the `k8s` one, for deploying to "plain" kubernetes clusters, and
+* the `openshift` one, for deploying to Openshift clusters.
+ ** {blank}
++
+[cols=2*]
+|===
+| The Openshift cluster used has been provisioned for free from [Developer Sandbox for Red Hat OpenShift
+| Red Hat Developer](https://developers.redhat.com/developer-sandbox)
+|===
+
+The profiles are mostly identical except for the `jkube` maven coordinates (same version, same `groupId`, different `artifactId`) and the image registry definitions for the `k8s` profile.
+
+A JDK17 on https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image[Red Hat Universal Base Image - ubi9] is being used as the base image, obtained from `registry.access.redhat.com/ubi9/openjdk-17:1.18-1`.
+
+== Image registry
+
+Openshift comes with an integrated image registry by default, whereas neither `k3s` nor `kind` provide one out of the box. Both `k3s` and `kind` can be augmented with image registries, but this is beyond the scope if this project.
+
+So for storing and loading the container images of this project the https://quay.io/[Quay Container Registry] has been used by creating a free repository at https://quay.io/user/erouvas/[quay.io/erouvas] has been used through defining the following properties for the `k8s` profile:
+
+----
+<jkube.docker.push.registry>quay.io/erouvas</jkube.docker.push.registry>
+<jkube.docker.pull.registry>quay.io/erouvas</jkube.docker.pull.registry>
+----
+
+There is no need to define these properties for the `openshift` profile as `jkube` will automatically use the integrated Openshift image registry without any further configuration.
+
+== Deployment to a k3s kubernetes cluster with jkube
+
+Switch to the `k3s` context, for example `kubectl config use-context my-k3s`.
+
+With the `jkube` maven plugin deployment to `k3s` requires nothing more than a regular maven build. For example, the following will perform a regular maven build of the application and if successful deployment to `k3s` will follow with the `k8s:build k8s:push k8s:resource k8s:apply` maven goals. Any additional kubernetes objects, such as services, ingresses, etc, will be taken care by `jkube`.
+
+----
+mvn clean compile package -Pk8s \
+    k8s:build k8s:push k8s:resource k8s:apply \
+    -Djkube.docker.username=<username> -Djkube.docker.password=<password>
+----
+
+____
+`username` and `password` are the credentials for the remote image registry
+____
+
+By default, `jkube` will try to use docker for image building and registering. If docker is not running/available the https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin[JIB] build strategy can be used, as in:
+
+----
+mvn clean compile package -Pk8s -Djkube.build.strategy=jib \
+    k8s:build k8s:push k8s:resource k8s:apply \
+    -Djkube.docker.username=<username> -Djkube.docker.password=<password>
+----
+
+____
+Using the JIB build strategy here will build *and* deploy the application without any additional configuration needed by `jkube`. Contrast that with just building the container image with JIB in the following paragraphs.
+____
+
+Finally delete deployments and any additional object with:
+
+----
+kubectl delete deployment sample-camel; \
+kubectl delete service sample-camel; \
+kubectl delete pvc kratadata; \
+kubectl delete ingress sample-camel
+----
+
+== Building container image with Spring
+
+[cols=2*]
+|===
+| The Spring maven plugin incorporate cloud-native buildpacks to automate the container image building process. More info at https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#introduction[Spring Boot Maven Plugin Documentation]. Container files can also be used to provide more control of the whole process, more info at [Getting Started
+| Spring Boot Docker](https://spring.io/guides/topicals/spring-boot-docker).
+|===
+
+Using the Spring maven plugin requires docker to be running.
+
+The following will create a container image using defaults and deposit it in your local docker image registry. Usually no additional configuration is necessary. This will take care of the container image creation, but the deployment to Openshift or another Kubernetes cluster needs to be done as a separate step.
+
+----
+mvn clean package spring-boot:build-image-no-fork
+----
+
+== Building container images with JIB
+
+An alternate way of building a container image out of a Spring project is to use the https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin[JIB] maven plugin (of Google fame).
+
+Using JIB additional configuration may be required if not using `docker.io` as the image registry as well as if any changes have been made on the SpringBoot defaults, changing the default port of `8080` for example.
+
+[cols=2*]
+|===
+| The post [Dockerizing Java Apps using Jib
+| Baeldung](https://www.baeldung.com/jib-dockerizing) has a concise example to get things going.
+|===
+
+Keep in mind, though, that as before this will only build the container image. Additional steps are required to deploy the image to an Openshift or Kubernetes cluster.
+
+== Deploying to a kind kubernetes cluster with jkube
+
+=== Setting up kind
+
+kind is a tool for running local Kubernetes clusters using Docker container "`nodes`".
+kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
+
+Recommending https://kind.sigs.k8s.io/docs/user/quick-start/[kind:Quick Start] to spin up a basic kind cluster. That would be enough for deploying the application. However it is worth going over the https://kind.sigs.k8s.io/docs/user/loadbalancer[kind:LoadBalancer] configuration. That way a response from the application can be obtained, thus verifying deployment status.
+
+=== Deploying the sample application
+
+After setting the `kubectl` context with (my kind cluster is named `k1`)
+
+----
+kubectl config use-context kind-k1
+----
+
+Deployment of the application can follow exactly the same as `k3s`. For example, using the JIB build strategy:
+
+----
+mvn clean compile package -Pk8s -Djkube.build.strategy=jib \
+    k8s:build k8s:push k8s:resource k8s:apply \
+    -Djkube.docker.username=<username> -Djkube.docker.password=<password>
+----
+
+Verify deployment by querying the cluster:
+
+----
+# kubectl get pods
+NAME                            READY   STATUS    RESTARTS   AGE
+sample-camel-74cdbccdfb-zhfz7   1/1     Running   0          15m
+sample-camel-74cdbccdfb-zz4rt   1/1     Running   0          15m
+
+# kubectl get endpoints
+NAME           ENDPOINTS                         AGE
+kubernetes     172.18.0.2:6443                   21d
+sample-camel   10.244.0.8:8100,10.244.0.9:8100   16m
+
+# kubectl get svc
+NAME           TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)          AGE
+kubernetes     ClusterIP      10.96.0.1       <none>           443/TCP          21d
+sample-camel   LoadBalancer   10.96.172.153   172.18.255.200   8100:31989/TCP   16m
+----
+
+Since neither `k3s` nor `kind` have an integrated image registry installed by default a remote image registry has to be used. Please allow for image transferring to complete before giving up on pods initialising.
+
+To verify that the application has indeed been deployed and is operational we can try to invoke it:
+
+----
+# curl http://172.18.255.200:8100/hello/
+Hello World from sample-camel-74cdbccdfb-zhfz7 - 25-Mar-24 22:09
+----
+
+Cleaning up after deployment to `kind` could be achieved with something like:
+
+----
+kubectl delete service sample-camel; \
+kubectl delete pvc kratadata; \
+kubectl delete ingress sample-camel
+kubectl delete all -l app=sample-camel
+----
+
+
+== Deploying to Openshift
+
+[cols=2*]
+|===
+| An Openshift cluster provisioned through the [Developer Sandbox for Red Hat OpenShift
+| Red Hat Developer](https://developers.redhat.com/developer-sandbox) has been used to deploy the sample application. Another option would be to use https://developers.redhat.com/products/openshift-local/overview[Red Hat OpenShift Local] (free registration required) to spin up an Openshift cluster on your local machine.
+|===
+
+TIP: Openshift allows to spin up a cluster using Openshift, https://www.okd.io/[OKD], https://microshift.io/[MicroShift] or even http://podman.io/[Podman] - just use `crc config set preset okd; crc setup; crc start` for an OKD cluster.
+
+After logging in to the Openshift cluster, using `+oc login --token=sha256~sCgaV --server=https://api.sandbox-m2.openshiftapps.com:6443+` for example, the application is deployed much in the same way as in the plain kubernetes clusters described above. For example:
+
+----
+mvn clean package oc:build oc:resource oc:apply -Popenshift
+----
+
+Since Openshift provides an internal image registry the `openshift` profile in the `pom.xml` does not need to refer to any external registries. Another difference is that all of the build is taking place inside Openshift. If you follow the pod creation whilst the build running you will notice that a "build" pod is created for building the image and deployment is done through a "deploy" pod. But all of this is transparent and is handled by `jkube`.
+
+Openshift uses a `router` object to expose services outside the cluster and unless explicitly specified port forwarding is handled by it. So although the application uses port `8100`, this is encapsulated in the route URL and does not need to be specified when invoking it (contrast that to the invocation in the `kind` cluster). `pom.xml` also specifies two instances for the application. Using something like the following command we can verify that indeed two instances (or "replicas") of the application are available in the cluster:
+
+----
+# \
+while (:); do
+  curl http://sample-camel-erouvas-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com/hello/;
+  echo ; sleep 0.5s;
+done
+
+Hello World from sample-camel-2-g9d66 - 03-Apr-24 02:20
+Hello World from sample-camel-2-pf7s4 - 03-Apr-24 02:20
+Hello World from sample-camel-2-g9d66 - 03-Apr-24 02:20
+Hello World from sample-camel-2-pf7s4 - 03-Apr-24 02:20
+Hello World from sample-camel-2-g9d66 - 03-Apr-24 02:20
+...
+----
+
+The number of replicas required is specified in the `pom.xml` in the same way for both kubernetes and Openshift clusters. `jkube` takes care of any deployment configuration required.
+
+----
+<resources>
+    <controller>
+        <replicas>2</replicas>
+        <controllerName>${project.artifactId}</controllerName>
+    </controller>
+</resources>
+----
+
+Finishing up any deployments and any additional objects created can be deleted using something like the following:
+
+----
+oc delete deploymentconfig sample-camel; \
+oc delete service sample-camel; \
+oc delete pvc kratadata; \
+oc delete ingress sample-camel
+----
