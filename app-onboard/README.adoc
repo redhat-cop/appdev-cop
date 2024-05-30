@@ -258,3 +258,114 @@ oc delete service sample-camel; \
 oc delete pvc kratadata; \
 oc delete ingress sample-camel
 ----
+
+
+== Exploiting some of jkube features
+
+https://eclipse.dev/jkube/[Eclipse JKube] resources include documentation as well as examples which are highly recommended. In the next paragraphs some common use cases will be presented.
+
+More `jkube` resources can be found at:
+
+* https://blog.marcnuri.com/eclipse-jkube-introduction-kubernetes-openshift[Eclipse JKube introduction: Java tools and plugins for Kubernetes and OpenShift - Marc Nuri]
+* https://blog.marcnuri.com/eclipse-jkube-1-16[Eclipse JKube 1.16 is now available! - Marc Nuri]
+* https://github.com/eclipse-jkube/jkube/tree/master[GitHub - eclipse-jkube/jkube: Build and Deploy java applications on Kubernetes] and https://github.com/eclipse-jkube/jkube/tree/master/quickstarts[jkube/quickstarts at master]
+
+
+=== HTTPS endpoints for the sample camel application
+
+The camel application that has been used as a testbed throughout exposes a single endpoint at `/hello/` over HTTP. Exposing the same endpoint over HTTPS can be accomplished with `jkube` as well. The steps required are:
+
+* Obtain an SSL certificate (for demo purposes a self-signed certificate will be used in this example)
+* Place the certificate in the classpath and specify Springboot properties
+* Add a couple of `jkube` directives for `k8s` or `openshift` deployment 
+
+*Create a self-signed certificate*
+
+Using `keytool` a JKS keystore is created which is then converted into a PKCS12-type keystore
+
+```
+# keytool -genkeypair -alias springboot -keyalg RSA -keysize 4096 -storetype JKS -keystore springboot.jks -validity 3650 -storepass password
+
+What is your first and last name?
+  [Unknown]:  Stathis Rouvas
+What is the name of your organizational unit?
+  [Unknown]:  Selkies Research    
+What is the name of your organization?
+  [Unknown]:  Nuckelavee Enterprises
+What is the name of your City or Locality?
+  [Unknown]:  Ness of Brodgar
+What is the name of your State or Province?
+  [Unknown]:  Hjaltland
+What is the two-letter country code for this unit?
+  [Unknown]:  UK
+Is CN=Stathis Rouvas, OU=Selkies Research, O=Nuckelavee Enterprises, L=Ness of Brodgar, ST=Hjaltland, C=UK correct?
+  [no]:  yes
+
+Generating 4,096 bit RSA key pair and self-signed certificate (SHA384withRSA) with a validity of 3,650 days
+        for: CN=Stathis Rouvas, OU=Selkies Research, O=Nuckelavee Enterprises, L=Ness of Brodgar, ST=Hjaltland, C=UK
+Enter key password for <springboot>
+        (RETURN if same as keystore password):  
+
+Warning:
+The JKS keystore uses a proprietary format. It is recommended to migrate to PKCS12 which is an industry standard format using "keytool -importkeystore -srckeystore springboot.jks -destkeystore springboot.jks -deststoretype pkcs12".
+
+
+# keytool -importkeystore -srckeystore springboot.jks -destkeystore springboot.p12 -deststoretype pkcs12
+```
+
+After all this the `springboot.p12` PKCS12 keystore is created which is placed in the `resources` folder.
+
+
+*Define Springboot properties*
+
+In `application.properties` the following properties need to be defined:
+
+NOTE: These properties need to be *uncommented* in the `application.properties` file of the sample camel application.
+
+```
+server.ssl.key-store=classpath:springboot.p12
+server.ssl.key-store-password=password
+server.ssl.key-store-type=pkcs12
+server.ssl.key-alias=springboot
+server.ssl.key-password=password
+server.ssl.port=@application_port@
+```
+
+*Define jkube directives*
+
+The following directives are needed for getting `jkube` to create services/routes for HTTPS in passthrough mode:
+
+```
+<jkube.enricher.jkube-openshift-route.tlsTermination>passthrough</jkube.enricher.jkube-openshift-route.tlsTermination>
+<jkube.enricher.jkube-openshift-route.tlsInsecureEdgeTerminationPolicy>None</jkube.enricher.jkube-openshift-route.tlsInsecureEdgeTerminationPolicy>
+```
+
+These properties have already been defined in the `pom.xml` under the `k8s-ssl` maven profile.
+
+*Deploying the HTTPS enabled endpoint*
+
+Deployment required nothing more than selecting the relevant maven profile, `k8s-ssl` in this case. For example:
+
+```
+mvn clean compile package -Pk8s-ssl \
+  k8s:build k8s:push k8s:resource k8s:apply \
+  -Djkube.docker.username=<username> -Djkube.docker.password=<password>
+```
+
+and trying it out :
+
+```
+# please note the following entry in the startup logs:
+#
+# ...on Startup: Undertow started on port 8100 (https)
+#
+
+# 
+# - the endpoint is not longer available through HTTP
+#
+# curl http://172.18.255.200:8100/hello/
+curl: (1) Received HTTP/0.9 when not allowed
+
+# curl -k https://172.18.255.200:8100/hello/; echo 
+Hello World from sample-camel-ccdbcfd99-wlr9c - 27-May-24 11:23
+```
