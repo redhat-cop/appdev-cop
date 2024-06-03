@@ -1,6 +1,7 @@
 :icons: font
 :source-highlighter: prettify
 :project_id: app-onboard
+:imagesdir: images
 :toc:
 
 = Developer friendly application OnBoarding to Kubernetes and Openshift clusters
