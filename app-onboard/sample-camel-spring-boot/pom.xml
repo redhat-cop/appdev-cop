@@ -222,6 +222,16 @@
                                 <controller>
                                     <replicas>2</replicas>
                                     <controllerName>${project.artifactId}</controllerName>
+                                    <volumes>
+                                        <volume>
+                                            <type>persistentVolumeClaim</type>
+                                            <name>keep</name>
+                                            <claimRef>keepme</claimRef>
+                                            <mounts>
+                                                <mount>/deployments/keepme</mount>
+                                            </mounts>
+                                        </volume>
+                                    </volumes>
                                 </controller>
                             </resources>
 
@@ -235,6 +245,9 @@
                                         <expose>true</expose>
                                     </jkube-service>
                                 </config>
+                                <excludes>
+                                    jkube-volume-permission
+                                </excludes>
                             </enricher>
                         </configuration>
 
