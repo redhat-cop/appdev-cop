@@ -192,6 +192,21 @@
                                     </jkube-service>
                                 </config>
                             </enricher>
+
+                            <helm>
+                                <chart>sample-camel</chart>
+                                <keywords>camel,springboot</keywords>
+                                <stableRepository>
+                                    <name>nexus_oci_release</name>
+                                    <url>https://reekie.duckdns.org:8443/repository/reekieHelm/</url>
+                                    <type>NEXUS</type>
+                                </stableRepository>
+                                <snapshotRepository>
+                                    <name>nexus_oci_snapshot</name>
+                                    <url>https://reekie.duckdns.org:8443/repository/reekieHelm/</url>
+                                    <type>NEXUS</type>
+                                </snapshotRepository>
+                            </helm>
                         </configuration>
 
                     </plugin>
@@ -220,7 +235,7 @@
                         <configuration>
                             <resources>
                                 <controller>
-                                    <replicas>2</replicas>
+                                    <replicas>1</replicas>
                                     <controllerName>${project.artifactId}</controllerName>
                                     <volumes>
                                         <volume>
