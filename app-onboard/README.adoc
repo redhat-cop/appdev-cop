@@ -1,6 +1,7 @@
 :icons: font
 :source-highlighter: prettify
 :project_id: app-onboard
+:imagesdir: images
 :toc:
 
 = Developer friendly application OnBoarding to Kubernetes and Openshift clusters
@@ -369,3 +370,193 @@ curl: (1) Received HTTP/0.9 when not allowed
 # curl -k https://172.18.255.200:8100/hello/; echo 
 Hello World from sample-camel-ccdbcfd99-wlr9c - 27-May-24 11:23
 ```
+
+
+=== Using persistent storage through a PVC
+
+Using a PVC with `jkube` requires declaring it in the `pom.xml` like this: (checkout `k8s-ssl` profile for more)
+
+```
+<configuration>
+    <resources>
+        <controller>
+            ...
+            <volumes>
+                <volume>
+                    <type>persistentVolumeClaim</type>
+                    <name>keep</name>
+                    <claimRef>keepme</claimRef>
+                    <mounts>
+                        <mount>/deployments/keepme</mount>
+                    </mounts>
+                </volume>
+            </volumes>
+            ...
+        </controller>
+    </resources>
+
+    <enricher>
+        ...
+        <excludes>
+            jkube-volume-permission
+        </excludes>
+        ...
+    </enricher>
+</configuration>
+```
+
+In the `volumes` section how the PVC is going to be mounted is defined. `claimRef` refers to a PVC whereas `mount` specifies where will the PVC be made available in the application. In this sample camel application the PVC is used to store the logs, check out the `logging` configuration in `application.properties`.
+
+The only tricky part is employing the `jkube-volume-permission` enricher which modifies the PVC permissions to be usable by the application. Whether it is needed or not depends on how the PVC has been defined. In this example, we let `jkube` make the claim through the `keepme-pvc.yaml` file in the `main\jkube` directory. Note that the name of the file is also the name of the PVC that is used in the `claimRef`. Since permissions are specified explicitly in the PVC the enricher is excluded.
+
+
+=== Compute resources and health probes
+
+Applications deployed by `jkube` will be subject to whatever compute resources have been defined for the namespace (in Openshift for example). Similarly, `jkube` is able to recognise any management endpoints defined in the `application.properties` and apply them to the deployment. Looking at the startup logs of the application the following lines can be seen (correlate with `management` entries in the `application.properties` file):
+
+```
+[INFO] k8s: jkube-controller: Adding a default Deployment
+[INFO] k8s: jkube-service: Adding a default service 'sample-camel' with ports [8100]
+[INFO] k8s: jkube-healthcheck-spring-boot: Adding readiness probe on port 8100, path='/actuator/health', scheme='HTTPS', with initial delay 10 seconds
+[INFO] k8s: jkube-healthcheck-spring-boot: Adding liveness probe on port 8100, path='/actuator/health', scheme='HTTPS', with initial delay 180 seconds
+```
+
+Both compute resources as well as the details of the health and readiness probes can be defined in the `pom.xml` without the need to modify any YAML files. The following is a somewhat more extensive `configuration` section for an Openshift deployment. The following are defined :
+
+- compute resources for the build image stage
+- compute resources for the application itself
+- health, readiness and startup probes configuration
+
+```
+<configuration>
+    <mode>openshift</mode>
+    <verbose>true</verbose>
+
+    <enricher>
+        <excludes>
+            jkube-volume-permission
+        </excludes>
+    </enricher>
+
+    <resources>
+
+        <openshiftBuildConfig>
+            <requests>
+                <cpu>100m</cpu>
+                <memory>200Mi</memory>
+            </requests>
+            <limits>
+                <cpu>900m</cpu>
+                <memory>800Mi</memory>
+            </limits>
+        </openshiftBuildConfig>
+
+        <controller>
+            <readiness>
+                <getUrl>${actuator.health.url}</getUrl>
+                <initialDelaySeconds>60</initialDelaySeconds>
+                <timeoutSeconds>6</timeoutSeconds>
+            </readiness>
+            <liveness>
+                <getUrl>${actuator.health.url}</getUrl>
+                <initialDelaySeconds>60</initialDelaySeconds>
+                <timeoutSeconds>6</timeoutSeconds>
+            </liveness>
+            <startup>
+                <getUrl>${actuator.health.url}</getUrl>
+                <periodSeconds>60</periodSeconds>
+                <failureThreshold>6</failureThreshold>
+            </startup>
+            <containerResources>
+                <requests>
+                    <cpu>100m</cpu>
+                    <memory>200Mi</memory>
+                </requests>
+                <limits>
+                    <cpu>2000m</cpu>
+                    <memory>3072Mi</memory>
+                </limits>
+            </containerResources>
+        </controller>
+    </resources>
+
+</configuration>
+```
+
+More details are available at the https://eclipse.dev/jkube/docs/[Eclipse JKube Documentation]
+
+
+=== Creating Helm charts with jkube
+
+`jkube` can also be used to generate https://helm.sh/docs/topics/charts[Helm charts] which can then be pushed to a registry or to deploy the application. For the simplest case, no additional configuration is needed. The following will create locally a helm chart for the application.
+
+```
+mvn -Pk8s k8s:resource k8s:helm
+```
+
+To push the Help chart to a registry we just need to specify it in the `pom.xml`. For example the following configuration fragment will allow `jkube` to push to the `nexus_oci_release` (or snapshot). Any necessary credentials for the registry could either be specified in the (maven) `settings.xml` or be provided in the command line through the `jkube.helm.snapshotRepository.username` / `jkube.helm.snapshotRepository.password` options. 
+
+```
+<configuration>
+    ...
+    <helm>
+        <chart>sample-camel</chart>
+        <keywords>camel,springboot</keywords>
+        <stableRepository>
+            <name>nexus_oci_release</name>
+            <url>https://reekie.duckdns.org:8443/repository/reekieHelm/</url>
+            <type>NEXUS</type>
+        </stableRepository>
+        <snapshotRepository>
+            <name>nexus_oci_snapshot</name>
+            <url>https://reekie.duckdns.org:8443/repository/reekieHelm/</url>
+            <type>NEXUS</type>
+        </snapshotRepository>
+    </helm>
+    ...
+</configuration>
+```
+
+To push the generated helm chart to the configured registry the `k8s:helm-push` goal is added to the maven command line, as in:
+
+```
+mvn -Pk8s k8s:resource k8s:helm
+```
+
+Confirmation is displayed in the stdout
+
+```
+[INFO] --- k8s:1.16.2:resource (default-cli) @ sample-camel ---
+[INFO] k8s: Running generator spring-boot
+[INFO] k8s: spring-boot: Using Docker image registry.access.redhat.com/ubi9/openjdk-17:1.18-4 as base / builder
+[INFO] k8s: Using resource templates from /home/erouvas/app-onboard/sample-camel-spring-boot/src/main/jkube
+[INFO] k8s: jkube-controller: Adding a default Deployment
+[INFO] k8s: jkube-service: Adding a default service 'sample-camel' with ports [8100]
+[INFO] k8s: jkube-healthcheck-spring-boot: Adding readiness probe on port 8100, path='/actuator/health', scheme='HTTPS', with initial delay 10 seconds
+[INFO] k8s: jkube-healthcheck-spring-boot: Adding liveness probe on port 8100, path='/actuator/health', scheme='HTTPS', with initial delay 180 seconds
+[INFO] k8s: jkube-service-discovery: Using first mentioned service port '8100' 
+[INFO] k8s: jkube-revision-history: Adding revision history limit to 2
+[INFO] k8s: validating /home/erouvas/app-onboard/sample-camel-spring-boot/target/classes/META-INF/jkube/kubernetes/sample-camel-service.yml resource
+[INFO] k8s: validating /home/erouvas/app-onboard/sample-camel-spring-boot/target/classes/META-INF/jkube/kubernetes/keepme-persistentvolumeclaim.yml resource
+[INFO] k8s: validating /home/erouvas/app-onboard/sample-camel-spring-boot/target/classes/META-INF/jkube/kubernetes/sample-camel-deployment.yml resource
+[INFO] 
+[INFO] --- k8s:1.16.2:helm (default-cli) @ sample-camel ---
+[INFO] k8s: Creating Helm Chart "sample-camel" for Kubernetes
+[INFO] 
+[INFO] --- k8s:1.16.2:helm-push (default-cli) @ sample-camel ---
+[INFO] k8s: Uploading Helm Chart "sample-camel" to nexus_oci_snapshot
+[INFO] k8s: Upload Successful
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  10.619 s
+[INFO] Finished at: 2024-06-02T21:46:41+01:00
+[INFO] ------------------------------------------------------------------------
+```
+
+and in the registry itself:
+
+image::helm-chart-nexus.png[]
+
+
+Checking the https://eclipse.dev/jkube/docs/kubernetes-maven-plugin/#jkube:helm[documentation] is highly recommended to find out all the additional options that can be used for helm integration.
