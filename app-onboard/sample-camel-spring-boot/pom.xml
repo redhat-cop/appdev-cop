@@ -25,10 +25,9 @@
         <application_port>8100</application_port>
 
         <!-- jkube settings -->
-        <!-- <jkube-maven-plugin.version>1.16.2</jkube-maven-plugin.version> -->
         <jkube-maven-plugin.version>1.17.0</jkube-maven-plugin.version>
 
-        <jkube.generator.from>registry.access.redhat.com/ubi9/openjdk-17:1.18-4</jkube.generator.from>
+        <jkube.generator.from>registry.access.redhat.com/ubi9/openjdk-17:1.20-2.1726695177</jkube.generator.from>
         <!-- <jkube.docker.push.registry>quay.io/erouvas</jkube.docker.push.registry>
         <jkube.docker.pull.registry>quay.io/erouvas</jkube.docker.pull.registry> -->
         <jkube.imagePullPolicy>Always</jkube.imagePullPolicy>
