@@ -111,7 +111,9 @@ kubectl delete ingress sample-camel
 
 Using the Spring maven plugin requires docker to be running.
 
-The Spring maven plugin incorporate cloud-native buildpacks to automate the container image building process. More info at https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#introduction[Spring Boot Maven Plugin Documentation]. Container files can also be used to provide more control of the whole process, more info at [Getting Started Spring Boot Docker](https://spring.io/guides/topicals/spring-boot-docker).
+____
+The Spring maven plugin incorporate cloud-native buildpacks to automate the container image building process. More info at https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#introduction[Spring Boot Maven Plugin Documentation]. Container files can also be used to provide more control of the whole process, more info at https://spring.io/guides/topicals/spring-boot-docker[Getting Started Spring Boot Docker].
+____
 
 The following will create a container image using defaults and deposit it in your local docker image registry. Usually no additional configuration is necessary. This will take care of the container image creation, but the deployment to Openshift or another Kubernetes cluster needs to be done as a separate step.
 
@@ -126,7 +128,7 @@ An alternate way of building a container image out of a Spring project is to use
 Using JIB additional configuration may be required if not using `docker.io` as the image registry as well as if any changes have been made on the SpringBoot defaults, changing the default port of `8080` for example.
 
 ____
-The post [Dockerizing Java Apps using Jib Baeldung](https://www.baeldung.com/jib-dockerizing) has a concise example to get things going.
+The post https://www.baeldung.com/jib-dockerizing[Dockerizing Java Apps using Jib Baeldung] has a concise example to get things going.
 ____
 
 Keep in mind, though, that as before this will only build the container image. Additional steps are required to deploy the image to an Openshift or Kubernetes cluster.
