@@ -125,9 +125,9 @@ An alternate way of building a container image out of a Spring project is to use
 
 Using JIB additional configuration may be required if not using `docker.io` as the image registry as well as if any changes have been made on the SpringBoot defaults, changing the default port of `8080` for example.
 
-___
+____
 The post [Dockerizing Java Apps using Jib Baeldung](https://www.baeldung.com/jib-dockerizing) has a concise example to get things going.
-___
+____
 
 Keep in mind, though, that as before this will only build the container image. Additional steps are required to deploy the image to an Openshift or Kubernetes cluster.
 
