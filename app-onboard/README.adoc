@@ -55,7 +55,7 @@ To facilitate deployment to clusters as well as standalone execution two https:/
 
 The profiles are mostly identical except for the `jkube` maven coordinates (same version, same `groupId`, different `artifactId`) and the image registry definitions for the `k8s` profile.
 
-A JDK17 on https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image[Red Hat Universal Base Image - ubi9] is being used as the base image, obtained from `registry.access.redhat.com/ubi9/openjdk-17:1.18-1`.
+A JDK17 on https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image[Red Hat Universal Base Image - ubi9] is being used as the base image, obtained from `registry.access.redhat.com/ubi9/openjdk-17:openjdk-17:1.20-2.1726695177`.
 
 == Image registry
 
