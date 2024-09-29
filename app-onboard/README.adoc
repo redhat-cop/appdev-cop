@@ -111,9 +111,7 @@ kubectl delete ingress sample-camel
 
 Using the Spring maven plugin requires docker to be running.
 
-___
 The Spring maven plugin incorporate cloud-native buildpacks to automate the container image building process. More info at https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#introduction[Spring Boot Maven Plugin Documentation]. Container files can also be used to provide more control of the whole process, more info at [Getting Started Spring Boot Docker](https://spring.io/guides/topicals/spring-boot-docker).
-___
 
 The following will create a container image using defaults and deposit it in your local docker image registry. Usually no additional configuration is necessary. This will take care of the container image creation, but the deployment to Openshift or another Kubernetes cluster needs to be done as a separate step.
 
