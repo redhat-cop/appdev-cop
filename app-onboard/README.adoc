@@ -50,17 +50,12 @@ To facilitate deployment to clusters as well as standalone execution two https:/
 
 * the `k8s` one, for deploying to "plain" kubernetes clusters, and
 * the `openshift` one, for deploying to Openshift clusters.
- ** {blank}
-+
-[cols=2*]
-|===
-| The Openshift cluster used has been provisioned for free from [Developer Sandbox for Red Hat OpenShift
-| Red Hat Developer](https://developers.redhat.com/developer-sandbox)
-|===
+ ** The Openshift cluster used has been provisioned for free from [Developer Sandbox for Red Hat OpenShift Red Hat Developer](https://developers.redhat.com/developer-sandbox)
+
 
 The profiles are mostly identical except for the `jkube` maven coordinates (same version, same `groupId`, different `artifactId`) and the image registry definitions for the `k8s` profile.
 
-A JDK17 on https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image[Red Hat Universal Base Image - ubi9] is being used as the base image, obtained from `registry.access.redhat.com/ubi9/openjdk-17:1.18-1`.
+A JDK17 on https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image[Red Hat Universal Base Image - ubi9] is being used as the base image, obtained from `registry.access.redhat.com/ubi9/openjdk-17:openjdk-17:1.20-2.1726695177`.
 
 == Image registry
 
@@ -108,19 +103,17 @@ Finally delete deployments and any additional object with:
 ----
 kubectl delete deployment sample-camel; \
 kubectl delete service sample-camel; \
-kubectl delete pvc kratadata; \
+kubectl delete pvc keepme; \
 kubectl delete ingress sample-camel
 ----
 
 == Building container image with Spring
 
-[cols=2*]
-|===
-| The Spring maven plugin incorporate cloud-native buildpacks to automate the container image building process. More info at https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#introduction[Spring Boot Maven Plugin Documentation]. Container files can also be used to provide more control of the whole process, more info at [Getting Started
-| Spring Boot Docker](https://spring.io/guides/topicals/spring-boot-docker).
-|===
-
 Using the Spring maven plugin requires docker to be running.
+
+____
+The Spring maven plugin incorporate cloud-native buildpacks to automate the container image building process. More info at https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#introduction[Spring Boot Maven Plugin Documentation]. Container files can also be used to provide more control of the whole process, more info at https://spring.io/guides/topicals/spring-boot-docker[Getting Started Spring Boot Docker].
+____
 
 The following will create a container image using defaults and deposit it in your local docker image registry. Usually no additional configuration is necessary. This will take care of the container image creation, but the deployment to Openshift or another Kubernetes cluster needs to be done as a separate step.
 
@@ -134,11 +127,9 @@ An alternate way of building a container image out of a Spring project is to use
 
 Using JIB additional configuration may be required if not using `docker.io` as the image registry as well as if any changes have been made on the SpringBoot defaults, changing the default port of `8080` for example.
 
-[cols=2*]
-|===
-| The post [Dockerizing Java Apps using Jib
-| Baeldung](https://www.baeldung.com/jib-dockerizing) has a concise example to get things going.
-|===
+____
+The post https://www.baeldung.com/jib-dockerizing[Dockerizing Java Apps using Jib Baeldung] has a concise example to get things going.
+____
 
 Keep in mind, though, that as before this will only build the container image. Additional steps are required to deploy the image to an Openshift or Kubernetes cluster.
 
@@ -199,7 +190,7 @@ Cleaning up after deployment to `kind` could be achieved with something like:
 
 ----
 kubectl delete service sample-camel; \
-kubectl delete pvc kratadata; \
+kubectl delete pvc keepme; \
 kubectl delete ingress sample-camel
 kubectl delete all -l app=sample-camel
 ----
@@ -207,11 +198,7 @@ kubectl delete all -l app=sample-camel
 
 == Deploying to Openshift
 
-[cols=2*]
-|===
-| An Openshift cluster provisioned through the [Developer Sandbox for Red Hat OpenShift
-| Red Hat Developer](https://developers.redhat.com/developer-sandbox) has been used to deploy the sample application. Another option would be to use https://developers.redhat.com/products/openshift-local/overview[Red Hat OpenShift Local] (free registration required) to spin up an Openshift cluster on your local machine.
-|===
+An Openshift cluster provisioned through the [Developer Sandbox for Red Hat OpenShift Red Hat Developer](https://developers.redhat.com/developer-sandbox) has been used to deploy the sample application. Another option would be to use https://developers.redhat.com/products/openshift-local/overview[Red Hat OpenShift Local] (free registration required) to spin up an Openshift cluster on your local machine.
 
 TIP: Openshift allows to spin up a cluster using Openshift, https://www.okd.io/[OKD], https://microshift.io/[MicroShift] or even http://podman.io/[Podman] - just use `crc config set preset okd; crc setup; crc start` for an OKD cluster.
 
@@ -256,7 +243,7 @@ Finishing up any deployments and any additional objects created can be deleted u
 ----
 oc delete deploymentconfig sample-camel; \
 oc delete service sample-camel; \
-oc delete pvc kratadata; \
+oc delete pvc keepme; \
 oc delete ingress sample-camel
 ----
 
