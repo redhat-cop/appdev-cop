@@ -1,0 +1,125 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: third-party
+  apiVersion: v1
+objects:
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: third-party
+    name: third-party
+  spec:
+    lookupPolicy:
+      local: false
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: third-party
+    name: third-party
+  spec:
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: third-party:latest
+    strategy:
+      dockerStrategy: {}
+    source:
+      type: Binary
+      dockerfile: |
+        # See https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/8.0/html-single/using_jboss_eap_on_openshift_container_platform/index#assembly_deploying-a-third-party-application-on-openshift_assembly_building-and-running-jboss-eap-applicationson-openshift-container-platform
+        # Use EAP 8 Builder image to create a JBoss EAP 8 server
+        # with its default configuration
+    
+        FROM registry.redhat.io/jboss-eap-8/eap8-openjdk17-builder-openshift-rhel8:latest AS builder
+    
+        # Set up environment variables for provisioning. 
+        ENV GALLEON_PROVISION_FEATURE_PACKS org.jboss.eap:wildfly-ee-galleon-pack,org.jboss.eap.cloud:eap-cloud-galleon-pack
+        ENV GALLEON_PROVISION_LAYERS cloud-default-config
+        # Specify the JBoss EAP version  
+        ENV GALLEON_PROVISION_CHANNELS org.jboss.eap.channels:eap-8.0
+    
+    
+        # Run the assemble script to provision the server.
+        RUN /usr/local/s2i/assemble
+    
+        # Copy the JBoss EAP 8 server from the builder image to the runtime image.
+        FROM registry.redhat.io/jboss-eap-8/eap8-openjdk17-runtime-openshift-rhel8:latest AS runtime
+    
+        # Set appropriate ownership and permissions.
+        COPY --from=builder --chown=jboss:root $JBOSS_HOME $JBOSS_HOME
+        
+        COPY --chown=jboss:root helloworld.war $JBOSS_HOME/standalone/deployments/ROOT.war
+    
+        # Ensure appropriate permissions for the copied files.
+        RUN chmod -R ug+rwX $JBOSS_HOME
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"third-party:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"third-party\")].image"}]'
+    labels:
+      app: third-party
+    name: third-party
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        deployment: third-party
+    template:
+      metadata:
+        annotations:
+        labels:
+          deployment: third-party
+      spec:
+        containers:
+        - image: third-party:latest
+          name: third-party
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: third-party
+    name: third-party
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deployment: third-party
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/host.generated: "true"
+    labels:
+      app: third-party
+    name: third-party
+  spec:
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: third-party
+      weight: 100
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+    wildcardPolicy: None
