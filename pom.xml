@@ -82,7 +82,7 @@
 	</profiles>
 
 	<build>
-		<finalName>helloworld</finalName>
+		<finalName>demo-webapp</finalName>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>

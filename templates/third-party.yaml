@@ -52,7 +52,7 @@ objects:
         # Set appropriate ownership and permissions.
         COPY --from=builder --chown=jboss:root $JBOSS_HOME $JBOSS_HOME
         
-        COPY --chown=jboss:root helloworld.war $JBOSS_HOME/standalone/deployments/ROOT.war
+        COPY --chown=jboss:root demo-webapp.war $JBOSS_HOME/standalone/deployments/ROOT.war
     
         # Ensure appropriate permissions for the copied files.
         RUN chmod -R ug+rwX $JBOSS_HOME
