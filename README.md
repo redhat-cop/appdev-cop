@@ -19,7 +19,7 @@ The directory structure is mostly laid out like any standard Maven project, with
 In addition to the standard directories, there's an `.s2i` directory which contains S2I-specific 
 files, an `extensions` directory (pointed to by the `.s2i/environment` configuration file) 
 which contains additional configuration scripts that run on the JBoss EAP container during build
-and startup, and the `templates` directory containing YAML files. These are described in detail
+and startup, and the `ocp-yaml` directory containing YAML files. These are described in detail
 later in this README.
 
 ### Prerequisites
@@ -38,9 +38,13 @@ oc new-project jboss-eap-ocp-demo
 This section describes how to perform S2I builds and deployments of an EAP container image, using this repository's
 application source.
 
+You will see the message `Running install.sh` in the build lgos, and `Executed postconfigure.sh` in the Pod
+startup logs in the Deployment. These indicate that the `install.sh` and `postconfigure.sh` scripts in the 
+`extension` directory ran during install and during server startup, as expected.
+
 ### S2I via Helm
 
-S2I builds and deployments are performed using the EAP Helm Chart. This is done via the following command, and installs using the Helm parameters file located in `templates/helm-s2i.yaml`:
+S2I builds and deployments are performed using the EAP Helm Chart. This is done via the following command, and installs using the Helm parameters file located in `ocp-yaml/helm-s2i.yaml`:
 
 ```
 helm install helm-s2i -f ocp-yaml/helm-s2i.yaml jboss-eap/eap8
@@ -91,7 +95,7 @@ oc process -f ocp-yaml/template-third-party.yaml | oc create -f -
 oc start-build third-party --from-file=target/demo-webapp.war
 ```
 
-This builds a container using the Dockerfile defined in `templates/third-party.yaml`, and uses the provided WAR. The template also contains the Deployment, Service, and Route, so it should eventually be accessible, e.g. <https://third-party-rhdg-ocp-demo.apps-crc.testing/>
+This builds a container using the Dockerfile defined in `ocp-yaml/third-party.yaml`, and uses the provided WAR. The template also contains the Deployment, Service, and Route, so it should eventually be accessible, e.g. <https://third-party-rhdg-ocp-demo.apps-crc.testing/>
 
 ## Cleanup
 
