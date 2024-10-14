@@ -64,7 +64,7 @@
 								</feature-pack>
 							</feature-packs>
 							<layers>
-								<layer>cloud-server</layer>
+								<layer>cloud-default-config</layer>
 							</layers>
 							<name>ROOT.war</name>
 						</configuration>
