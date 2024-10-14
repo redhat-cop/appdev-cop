@@ -99,6 +99,8 @@ This builds a container using the Dockerfile defined in `ocp-yaml/third-party.ya
 
 ## Cleanup
 
+Delete application Kubernetes resources:
+
 ```
 # Delete the application built via Helm S2I
 helm uninstall helm-s2i
@@ -108,6 +110,12 @@ oc delete all -l app=s2i-chained
 oc delete all -l app=s2i-single
 # Delete the application built via third-party provided WAR
 oc delete all -l app=third-party
+```
+
+Delete the OpenShift project:
+
+```
+oc delete project jboss-eap-ocp-demo
 ```
 
 ## Links
