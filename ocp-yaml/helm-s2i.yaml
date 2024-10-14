@@ -2,5 +2,5 @@ build:
   uri: https://github.com/tkterris/jboss-eap-ocp-demo.git
   ref: main
 deploy:
-  replicas: 1
+  replicas: 2
   

@@ -103,7 +103,7 @@ objects:
     labels:
       app: s2i-chained
   spec:
-    replicas: 1
+    replicas: 2
     selector:
       matchLabels:
         app: s2i-chained

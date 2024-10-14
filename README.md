@@ -9,6 +9,7 @@ This application is a simple demonstration of some features of JBoss EAP 8 on Op
 - S2I deployment via Helm Chart
 - Deployment of existing, third-party binaries
 - Custom EAP server configuration
+- Clustering EAP via JGroups and DNS_PING
 
 ### Project Layout
 
@@ -35,8 +36,7 @@ oc new-project jboss-eap-ocp-demo
 ## S2I 
 
 This section describes how to perform S2I builds and deployments of an EAP container image, using this repository's
-application source. The application listens on port 8080 which is exposed with a Route, with port 8888 used for 
-JGroups cluster via KUBE_PING and the `*-ping` Service.
+application source.
 
 ### S2I via Helm
 
@@ -71,7 +71,8 @@ oc process -f ocp-yaml/template-s2i-single.yaml | oc create -f -
 ```
 
 As with the Helm installation, these will create BuildConfig(s), a Deployment, Services, and a Route. The application will
-be accessible at <> and <>.
+be accessible at <https://s2i-chained-jboss-eap-ocp-demo.apps-crc.testing> and 
+<https://s2i-single-jboss-eap-ocp-demo.apps-crc.testing>.
 
 ## Third-party Provided Artifact
 

@@ -60,12 +60,12 @@ objects:
   kind: Deployment
   metadata:
     annotations:
-      image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"third-party:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"third-party\")].image"}]'
+      alpha.image.policy.openshift.io/resolve-names: '*'
     labels:
       app: third-party
     name: third-party
   spec:
-    replicas: 1
+    replicas: 2
     selector:
       matchLabels:
         deployment: third-party
@@ -78,8 +78,29 @@ objects:
         containers:
         - image: third-party:latest
           name: third-party
+          env:
+          - name: JGROUPS_PING_PROTOCOL
+            value: dns.DNS_PING
+          - name: OPENSHIFT_DNS_PING_SERVICE_PORT
+            value: '8888'
+          - name: ENABLE_GENERATE_DEFAULT_DATASOURCE
+            value: 'false'
+          - name: OPENSHIFT_DNS_PING_SERVICE_NAME
+            value: third-party-ping
+          - name: ENV_FILES
+            value: /etc/extensions/*
           ports:
-          - containerPort: 8080
+          - name: jolokia
+            containerPort: 8778
+            protocol: TCP
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+          - name: ping
+            containerPort: 8888
+            protocol: TCP
+          - name: admin
+            containerPort: 9990
             protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
@@ -89,6 +110,30 @@ objects:
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: third-party-ping
+    labels:
+      app: third-party
+  spec:
+    clusterIP: None
+    publishNotReadyAddresses: true
+    ipFamilies:
+      - IPv4
+    ports:
+      - name: ping
+        protocol: TCP
+        port: 8888
+        targetPort: 8888
+    internalTrafficPolicy: Cluster
+    clusterIPs:
+      - None
+    type: ClusterIP
+    ipFamilyPolicy: SingleStack
+    sessionAffinity: None
+    selector:
+      app: third-party
 - apiVersion: v1
   kind: Service
   metadata:
@@ -98,8 +143,7 @@ objects:
     name: third-party
   spec:
     ports:
-    - name: 8080-tcp
-      port: 8080
+    - port: 8080
       protocol: TCP
       targetPort: 8080
     selector:
@@ -114,7 +158,7 @@ objects:
     name: third-party
   spec:
     port:
-      targetPort: 8080-tcp
+      targetPort: 8080
     to:
       kind: Service
       name: third-party
