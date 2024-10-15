@@ -26,6 +26,7 @@ later in this README.
 
 - Access to an OpenShift cluster. For local testing, [OpenShift Local](https://developers.redhat.com/products/openshift-local/overview) is recommended. 
 - Helm is installed and the chart repository at <https://jbossas.github.io/eap-charts/> has been added: `helm repo add jboss-eap https://jbossas.github.io/eap-charts/`
+- Java and Maven are installed (for the "Third-Party Provided Artifact" demo)
 
 Run the following commands to connect to your cluster and create a namespace:
 ```
