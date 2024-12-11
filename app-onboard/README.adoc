@@ -244,7 +244,7 @@ Finishing up any deployments and any additional objects created can be deleted u
 oc delete deploymentconfig sample-camel; \
 oc delete service sample-camel; \
 oc delete pvc keepme; \
-oc delete ingress sample-camel
+oc delete route sample-camel
 ----
 
 
