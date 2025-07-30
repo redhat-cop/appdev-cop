@@ -15,12 +15,11 @@ This repository is a collection of reusable **examples**, **demos**, **proof-of-
 
 ## Getting Started
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/pamenon/appdev-cop.git
-   ```
+1. Join Red Hat CoP org
 
-2. Navigate to the project of interest.
+2. Clone the repository
+
+3. Navigate to the project of interest or create a new project.
 
 3. Follow the instructions in its respective README (if available).
 
