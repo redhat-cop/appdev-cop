@@ -1,0 +1,180 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: client-application-template
+  apiVersion: v1
+objects:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      app: client
+      app.kubernetes.io/component: client
+      app.kubernetes.io/instance: client
+    name: client-secret
+  type: Opaque
+  stringData:
+    authorized.username: authorized
+    authorized.password: Authorized-password!
+    unauthorized.username: unauthorized
+    unauthorized.password: Unauthorized-password!
+    invalid.username: invalid
+    invalid.password: Invalid-password!
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: client
+      app.kubernetes.io/component: client
+      app.kubernetes.io/instance: client
+    name: client
+  spec:
+    lookupPolicy:
+      local: false
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: client
+      app.kubernetes.io/component: client
+      app.kubernetes.io/instance: client
+    name: client
+  spec:
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: client:latest
+    postCommit: {}
+    resources: {}
+    source:
+      git:
+        uri: https://github.com/tkterris/rhdg-ocp-demo.git
+      type: Git
+    strategy:
+      sourceStrategy:
+        env:
+        - name: MAVEN_S2I_ARTIFACT_DIRS
+          value: client/target
+        from:
+          kind: ImageStreamTag
+          name: java:openjdk-17-ubi8
+          namespace: openshift
+      type: Source
+    triggers:
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"client:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"client\")].image"}]'
+    labels:
+      app: client
+      app.kubernetes.io/component: client
+      app.kubernetes.io/instance: client
+    name: client
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        deployment: client
+    template:
+      metadata:
+        annotations:
+        labels:
+          deployment: client
+      spec:
+        volumes:
+          - name: tls-secret-volume
+            secret:
+              secretName: tls-secret
+        containers:
+        - image: client:latest
+          name: client
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+          env:
+          - name: ACTIVE_PROFILE
+            value: openshift
+          - name: INFINISPAN_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: client-secret
+                key: authorized.username
+          - name: INFINISPAN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: client-secret
+                key: authorized.password
+          - name: INFINISPAN_HOST
+            # We could just use "infinispan-cluster" here, but the cert has
+            # the SAN set to "*.rhdg-ocp-demo.svc.cluster.local" 
+            value: "infinispan-cluster.rhdg-ocp-demo.svc.cluster.local"
+          - name: INFINISPAN_PORT
+            value: '11222'
+          - name: INFINISPAN_TRUSTSTORE
+            value: "/etc/secret-volume/keystore.p12"
+          - name: INFINISPAN_TRUSTSTORE_PASSWORD
+            valueFrom:
+              secretKeyRef: 
+                name: tls-secret
+                key: password
+          volumeMounts: 
+              - name: tls-secret-volume
+                mountPath: /etc/secret-volume 
+                readOnly: true 
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: client
+      app.kubernetes.io/component: client
+      app.kubernetes.io/instance: client
+    name: client
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: 8443-tcp
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    selector:
+      deployment: client
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/host.generated: "true"
+    labels:
+      app: client
+      app.kubernetes.io/component: client
+      app.kubernetes.io/instance: client
+    name: client
+  spec:
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: client
+      weight: 100
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+    wildcardPolicy: None

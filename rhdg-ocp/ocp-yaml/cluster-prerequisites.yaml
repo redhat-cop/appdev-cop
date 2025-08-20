@@ -1,0 +1,182 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: cluster-prerequisites-template
+  apiVersion: v1
+objects:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      app: cluster-prerequisites
+      app.kubernetes.io/component: cluster-prerequisites
+      app.kubernetes.io/instance: cluster-prerequisites
+    name: tls-secret
+  type: Opaque
+  stringData:
+    alias: infinispan
+    password: ${TLS_KEYSTORE_PASSWORD}
+  data:
+    keystore.p12: ${TLS_KEYSTORE}
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: cluster-prerequisites
+      app.kubernetes.io/component: cluster-prerequisites
+      app.kubernetes.io/instance: cluster-prerequisites
+    name: server-jar-provider-artifacts
+  spec:
+    lookupPolicy:
+      local: false
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: cluster-prerequisites
+      app.kubernetes.io/component: cluster-prerequisites
+      app.kubernetes.io/instance: cluster-prerequisites
+    name: server-jar-provider
+  spec:
+    lookupPolicy:
+      local: false
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: cluster-prerequisites
+      app.kubernetes.io/component: cluster-prerequisites
+      app.kubernetes.io/instance: cluster-prerequisites
+    name: server-jar-provider-artifacts
+  spec:
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: server-jar-provider-artifacts:latest
+    postCommit: {}
+    resources: {}
+    source:
+      git:
+        uri: https://github.com/tkterris/rhdg-ocp-demo.git
+      type: Git
+    strategy:
+      sourceStrategy:
+        env:
+        - name: MAVEN_S2I_ARTIFACT_DIRS
+          value: server/target
+        from:
+          kind: ImageStreamTag
+          name: java:openjdk-17-ubi8
+          namespace: openshift
+      type: Source
+    triggers:
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: cluster-prerequisites
+      app.kubernetes.io/component: cluster-prerequisites
+      app.kubernetes.io/instance: cluster-prerequisites
+    name: server-jar-provider
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: server-jar-provider:latest
+    source:
+      dockerfile: |-
+        FROM httpd:latest
+        ADD deployments/rhdg-ocp-demo-server*.jar /var/www/html/server.jar
+        CMD run-httpd
+      images:
+      - from:
+          kind: ImageStreamTag
+          name: server-jar-provider-artifacts:latest
+        paths:
+        - destinationDir: .
+          sourcePath: /deployments
+    strategy:
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: httpd:latest
+          namespace: openshift
+        imageOptimizationPolicy: SkipLayers
+      type: Docker
+    triggers:
+    - type: ConfigChange
+    - imageChange: 
+        from:
+          kind: ImageStreamTag
+          name: server-jar-provider-artifacts:latest
+      type: ImageChange
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"server-jar-provider:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"server-jar-provider\")].image"}]'
+    labels:
+      app: cluster-prerequisites
+      app.kubernetes.io/component: cluster-prerequisites
+      app.kubernetes.io/instance: cluster-prerequisites
+    name: server-jar-provider
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        deployment: server-jar-provider
+    template:
+      metadata:
+        annotations:
+        labels:
+          deployment: server-jar-provider
+      spec:
+        containers:
+        - image: server-jar-provider:latest
+          name: server-jar-provider
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: cluster-prerequisites
+      app.kubernetes.io/component: cluster-prerequisites
+      app.kubernetes.io/instance: cluster-prerequisites
+    name: server-jar-provider
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: 8443-tcp
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    selector:
+      deployment: server-jar-provider
+parameters:
+  - name: TLS_KEYSTORE
+    displayName: Base64 encode PKCS12 keystore
+    description: Keystore used for security, encoded with e.g. "base64 -w 0 keystore.p12"
+    required: true
+  - name: TLS_KEYSTORE_PASSWORD
+    displayName: Password for the TLS keystore
+    required: true

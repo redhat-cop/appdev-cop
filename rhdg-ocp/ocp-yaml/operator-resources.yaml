@@ -1,0 +1,182 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: operator-resources-template
+  apiVersion: v1
+objects:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: "operator-secret-${SITE_NAME_LOCAL}"
+    labels:
+      app: infinispan-operator
+      app.kubernetes.io/component: infinispan-operator
+      app.kubernetes.io/instance: infinispan-operator
+  type: Opaque
+  stringData:
+    identities.yaml: |-
+      credentials:
+        - username: authorized
+          password: Authorized-password!
+          roles:
+          - authorized-role
+        - username: dev_user
+          password: dev_password
+          roles:
+          - authorized-role
+        - username: unauthorized
+          password: Unauthorized-password!
+- apiVersion: infinispan.org/v1
+  kind: Infinispan
+  metadata:
+    name: "infinispan-cluster${SITE_SUFFIX_LOCAL}"
+    labels:
+      app: infinispan-operator
+      app.kubernetes.io/component: infinispan-operator
+      app.kubernetes.io/instance: infinispan-operator
+  spec:
+    dependencies:
+      artifacts:
+        - url: http://server-jar-provider:8080/server.jar
+    security:
+      authorization:
+        roles:
+          - name: authorized-role
+            permissions:
+            - ALL
+        enabled: true
+      endpointEncryption:
+        type: Secret
+        certSecretName: tls-secret
+      endpointAuthentication: true
+      endpointSecretName: "operator-secret-${SITE_NAME_LOCAL}"
+    service:
+      type: DataGrid
+      sites:
+        local:
+          name: ${SITE_NAME_LOCAL}
+          expose:
+            type: Route
+            routeHostName: router${SITE_SUFFIX_LOCAL}.${RHDG_DEMO_SUBDOMAIN}.${OPENSHIFT_APPS_DOMAIN}
+          maxRelayNodes: ${{REPLICAS}}
+          encryption:
+            protocol: TLSv1.3
+            transportKeyStore:
+              secretName: tls-secret
+              alias: infinispan
+              filename: keystore.p12
+            routerKeyStore:
+              secretName: tls-secret
+              alias: infinispan
+              filename: keystore.p12
+            trustStore:
+              secretName: tls-secret
+              filename: keystore.p12
+        locations:
+          - name: ${SITE_NAME_REMOTE}
+            clusterName: "infinispan-cluster${SITE_SUFFIX_REMOTE}"
+            url: "infinispan+xsite://router${SITE_SUFFIX_REMOTE}.${RHDG_DEMO_SUBDOMAIN}.${OPENSHIFT_APPS_DOMAIN}:443"
+      container:
+        ephemeralStorage: true
+    expose:
+      type: Route
+      host: infinispan${SITE_SUFFIX_LOCAL}.${RHDG_DEMO_SUBDOMAIN}.${OPENSHIFT_APPS_DOMAIN}
+    replicas: ${{REPLICAS}}
+- apiVersion: infinispan.org/v2alpha1
+  kind: Cache
+  metadata:
+    name: "proto-cache-${SITE_NAME_LOCAL}"
+    labels:
+      app: infinispan-operator
+      app.kubernetes.io/component: infinispan-operator
+      app.kubernetes.io/instance: infinispan-operator
+  spec:
+    clusterName: "infinispan-cluster${SITE_SUFFIX_LOCAL}"
+    name: proto-cache
+    template: |-
+      distributedCache:
+        ### Identical cache config between Helm and Operator (If this cache 
+        ### config is updated, make sure to apply the change in both 
+        ### helm-values.yaml and operator-resources.yaml)
+        mode: "SYNC"
+        owners: "2"
+        statistics: "true"
+        encoding:
+          mediaType: "application/x-protostream"
+        security:
+          authorization:
+            roles: "authorized-role admin"
+        persistence:
+          store:
+            class: "com.redhat.rhdg.demo.server.loader.CustomStore"
+            segmented: "false"
+        indexing:
+          indexed-entities:
+          - rhdg_demo.ProtoValue
+        backups:
+          ${SITE_NAME_REMOTE}:
+            backup:
+              strategy: "ASYNC"
+- apiVersion: infinispan.org/v2alpha1
+  kind: Cache
+  metadata:
+    name: "serial-cache-${SITE_NAME_LOCAL}"
+    labels:
+      app: infinispan-operator
+      app.kubernetes.io/component: infinispan-operator
+      app.kubernetes.io/instance: infinispan-operator
+  spec:
+    clusterName: "infinispan-cluster${SITE_SUFFIX_LOCAL}"
+    name: serial-cache
+    template: |-
+      distributedCache:
+        ### Identical cache config between Helm and Operator (If this cache 
+        ### config is updated, make sure to apply the change in both 
+        ### helm-values.yaml and operator-resources.yaml)
+        mode: "SYNC"
+        owners: "2"
+        statistics: "true"
+        encoding:
+          mediaType: "application/x-java-serialized-object"
+        security:
+          authorization:
+            roles: "authorized-role admin"
+        backups:
+          ${SITE_NAME_REMOTE}:
+            backup:
+              strategy: "ASYNC"
+parameters:
+  - name: OPENSHIFT_APPS_DOMAIN
+    displayName: OpenShift domain used for all exposed Routes
+    description: Used to generate the individual Route hostnames. Route-specific names are prepended as a subdomain. 
+    value: apps-crc.testing
+    required: true
+  - name: RHDG_DEMO_SUBDOMAIN
+    displayName: Subdomain used for all routes of this demo
+    value: rhdg-ocp-demo
+    required: true
+  - name: SITE_NAME_LOCAL 
+    displayName: Local site name for cross-site replication
+    description: Site name of this cluster, used for cross-site replication. Must be one of "site1" or "site2", opposite of SITE_NAME_REMOTE.
+    value: site1
+    required: true
+  - name: SITE_SUFFIX_LOCAL 
+    displayName: Subdomain suffix of the local site
+    description: Appended to the Route subdomain for the local site. Blank is allowed.
+    value: 
+    required: false
+  - name: SITE_NAME_REMOTE 
+    displayName: Remote site name for cross-site replication
+    description: Site name of the other cluster, used for cross-site replication. Must be one of "site1" or "site2", opposite of SITE_NAME_LOCAL.
+    value: site2
+    required: true
+  - name: SITE_SUFFIX_REMOTE 
+    displayName: Subdomain suffix of the local site
+    description: Appended to the Route subdomain for the local site. Blank is allowed.
+    value: -site2
+    required: false
+  - name: REPLICAS 
+    displayName: Replica count
+    description: The number of RHDG nodes in this cluster
+    value: "2"
+    required: true

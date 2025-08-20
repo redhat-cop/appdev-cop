@@ -1,0 +1,143 @@
+deploy:
+  clusterDomain: cluster.local
+  monitoring:
+    enabled: false
+  container:
+    extraJvmOpts: ''
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      - name: TLS_KEYSTORE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: tls-secret
+            key: password
+    storage:
+      ephemeral: true
+      size: 1Gi
+    libraries: http://server-jar-provider:8080/server.jar
+  expose:
+    type: Route
+    host: infinispan.rhdg-ocp-demo.apps-crc.testing
+  ssl:
+    endpointSecretName: tls-secret
+  infinispan:
+    cacheContainer:
+      name: default
+      statistics: true
+      caches:
+        proto-cache:
+          distributedCache:
+            ### Identical cache config between Helm and Operator (If this cache 
+            ### config is updated, make sure to apply the change in both 
+            ### helm-values.yaml and operator-resources.yaml)
+            mode: "SYNC"
+            owners: "2"
+            statistics: "true"
+            encoding:
+              mediaType: "application/x-protostream"
+            security:
+              authorization:
+                roles: "authorized-role admin"
+            persistence:
+              store:
+                class: "com.redhat.rhdg.demo.server.loader.CustomStore"
+                segmented: "false"
+            indexing:
+              indexed-entities:
+              - rhdg_demo.ProtoValue
+        serial-cache:
+          distributedCache:
+            ### Identical cache config between Helm and Operator (If this cache 
+            ### config is updated, make sure to apply the change in both 
+            ### helm-values.yaml and operator-resources.yaml)
+            mode: "SYNC"
+            owners: "2"
+            statistics: "true"
+            encoding:
+              mediaType: "application/x-java-serialized-object"
+            security:
+              authorization:
+                roles: "authorized-role admin"
+      transport:
+        cluster: '${infinispan.cluster.name:infinispan-cluster}'
+        node-name: '${infinispan.node.name:}'
+        stack: kubernetes
+      security:
+        authorization:
+          roles:
+            authorized-role:
+              role:
+                permissions:
+                  - "ALL"
+    server:
+      endpoints:
+        - securityRealm: default
+          socketBinding: default
+        - connectors:
+            rest:
+              restConnector:
+                authentication:
+                  mechanisms: BASIC
+          securityRealm: metrics
+          socketBinding: metrics
+      interfaces:
+        - inetAddress:
+            value: '${infinispan.bind.address:127.0.0.1}'
+          name: public
+      security:
+        securityRealms:
+          - name: default
+            serverIdentities:
+              ssl:
+                keystore:
+                  path: "/etc/encrypt/endpoint/keystore.p12" 
+                  alias: "infinispan"
+                  password: "${env.TLS_KEYSTORE_PASSWORD}"
+            propertiesRealm:
+              groupProperties:
+                path: groups.properties
+              groupsAttribute: Roles
+              userProperties:
+                path: users.properties
+          - name: metrics
+            propertiesRealm:
+              groupProperties:
+                path: metrics-groups.properties
+                relativeTo: infinispan.server.config.path
+              groupsAttribute: Roles
+              userProperties:
+                path: metrics-users.properties
+                relativeTo: infinispan.server.config.path
+      socketBindings:
+        defaultInterface: public
+        portOffset: '${infinispan.socket.binding.port-offset:0}'
+        socketBinding:
+          - name: default
+            port: 11222
+          - name: metrics
+            port: 11223
+  logging:
+    categories:
+      - category: com.arjuna
+        level: warn
+      - category: io.netty.handler.ssl.ApplicationProtocolNegotiationHandler
+        level: error
+  makeDataDirWritable: false
+  nameOverride: ''
+  replicas: 2
+  resourceLabels:
+    - key: app
+      value: infinispan-helm
+  security:
+    authentication: true
+    secretName: 'helm-secret'
+images:
+  initContainer: registry.access.redhat.com/ubi8-micro
+  server: registry.redhat.io/datagrid/datagrid-8-rhel8:latest
+

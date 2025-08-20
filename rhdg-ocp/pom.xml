@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.redhat</groupId>
+	<artifactId>rhdg-ocp-demo</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<name>rhdg-ocp-demo</name>
+	<description>RHDG 8 on OCP Parent</description>
+
+	<modules>
+		<module>shared-libs</module>
+		<module>client</module>
+		<module>server</module>
+	</modules>
+
+	<properties>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<infinispan.version>14.0.21.Final-redhat-00001</infinispan.version>
+		<spring.version>3.2.2</spring.version>
+		<springdoc.version>2.3.0</springdoc.version>
+		<slf4j.version>1.7.25.redhat-00003</slf4j.version>
+		<shadeplugin.version>3.5.1</shadeplugin.version>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+
+			<dependency>
+				<groupId>org.infinispan</groupId>
+				<artifactId>infinispan-bom</artifactId>
+				<version>${infinispan.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${spring.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+				<version>${springdoc.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.redhat</groupId>
+				<artifactId>rhdg-ocp-demo-libs</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring.version}</version>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>${shadeplugin.version}</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+</project>
