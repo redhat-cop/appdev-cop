@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.redhat</groupId>
+	<artifactId>jboss-eap-ocp-demo</artifactId>
+	<packaging>war</packaging>
+	<version>1.0-SNAPSHOT</version>
+	<name>helloworld Maven Webapp</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<java.version>17</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.release>${java.version}</maven.compiler.release>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.jboss.bom</groupId>
+				<artifactId>jboss-eap-ee</artifactId>
+				<version>8.0.0.GA-redhat-00009</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<dependency>
+			<groupId>jakarta.servlet</groupId>
+			<artifactId>jakarta.servlet-api</artifactId>
+		</dependency>
+	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>openshift</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jboss.eap.plugins</groupId>
+						<artifactId>eap-maven-plugin</artifactId>
+						<version>1.0.0.Final-redhat-00014</version>
+						<configuration>
+							<channels>
+								<channel>
+									<manifest>
+										<groupId>org.jboss.eap.channels</groupId>
+										<artifactId>eap-8.0</artifactId>
+									</manifest>
+								</channel>
+							</channels>
+							<feature-packs>
+								<feature-pack>
+									<location>
+										org.jboss.eap:wildfly-ee-galleon-pack</location>
+								</feature-pack>
+								<feature-pack>
+									<location>
+										org.jboss.eap.cloud:eap-cloud-galleon-pack</location>
+								</feature-pack>
+							</feature-packs>
+							<layers>
+								<layer>cloud-default-config</layer>
+							</layers>
+							<name>ROOT.war</name>
+						</configuration>
+						<executions>
+							<execution>
+								<goals>
+									<goal>package</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<build>
+		<finalName>demo-webapp</finalName>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.10.1</version>
+			</plugin>
+			<plugin>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>3.3.2</version>
+			</plugin>
+		</plugins>
+	</build>
+</project>
