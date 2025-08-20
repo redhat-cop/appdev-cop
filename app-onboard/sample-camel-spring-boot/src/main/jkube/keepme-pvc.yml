@@ -1,0 +1,10 @@
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2048Mi
+  mountOptions:
+    - dir_mode=0777
+    - file_mode=0777
+    
