@@ -1,6 +1,7 @@
 build:
-  uri: https://github.com/tkterris/jboss-eap-ocp-demo.git
+  uri: https://github.com/redhat-cop/appdev-cop.git
   ref: main
+  contextDir: jboss-eap-ocp
 deploy:
   replicas: 2
   
