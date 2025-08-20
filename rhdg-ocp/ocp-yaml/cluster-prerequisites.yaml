@@ -58,7 +58,9 @@ objects:
     resources: {}
     source:
       git:
-        uri: https://github.com/tkterris/rhdg-ocp-demo.git
+        uri: https://github.com/redhat-cop/appdev-cop.git
+        ref: main
+      contextDir: rhdg-ocp
       type: Git
     strategy:
       sourceStrategy:
