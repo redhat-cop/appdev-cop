@@ -1,0 +1,11 @@
+[allowlist]
+  description = "Global Allowlist"
+
+  # Ignore based on any subset of the file path
+  paths = [
+
+    # Ignore template YAML files that may have example Secrets
+    '''ocp-yaml''','''templates'''
+
+  ]
+

@@ -138,6 +138,6 @@ deploy:
     authentication: true
     secretName: 'helm-secret'
 images:
-  initContainer: registry.access.redhat.com/ubi8-micro
-  server: registry.redhat.io/datagrid/datagrid-8-rhel8:latest
+  initContainer: registry.access.redhat.com/ubi9-micro
+  server: registry.redhat.io/datagrid/datagrid-8-rhel9:latest
 
