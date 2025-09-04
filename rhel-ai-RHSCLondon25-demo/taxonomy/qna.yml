@@ -1,9 +1,9 @@
-version: 3 
+version: 3
 domain: astronomy 
 document_outline: | 
   Information about the Phoenix Constellation including the
   history, characteristics, and features of the stars in the constellation.
-created_by: <user-name> 
+created_by: maha
 seed_examples:
   - context: | 
       **Phoenix** is a minor constellation in the southern sky. Named after the mythical
