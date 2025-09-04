@@ -142,8 +142,3 @@ seed_examples:
         answer: |
           Robert's Quartet is composed of the irregular galaxy NGC 87,
           and three spiral galaxies NGC 88, NGC 89 and NGC 92.
-document:
-  repo: https://github.com/mahalakshmiviju/appdev-cop.git
-  commit: <commit hash> 
-  patterns:
-  - phoenix_constellation.md
