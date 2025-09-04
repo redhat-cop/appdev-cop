@@ -146,5 +146,4 @@ document:
   repo: https://github.com/mahalakshmiviju/appdev-cop.git
   commit: <commit hash> 
   patterns:
-  - phoenix_constellation.md 
-  - phoenix_history.md
+  - phoenix_constellation.md
