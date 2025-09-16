@@ -19,6 +19,12 @@ seed_examples:
         answer: |
           RHEL AI allows users to customise LLMs by using the LAB method, which is implemented by the InstructLab open-source project. Users can create and add their own "knowledge" or "skills" data into a Git repository. 
           This data is then used to fine-tune a base model, such as one from the Granite family, with minimal machine learning expertise required. This customisation workflow involves steps like installing RHEL AI, adding data to a taxonomy tree via a CLI and Git, generating synthetic data, training the base model, and then serving the newly customised model for inference.
+  - context: |
+      InstructLab InstructLab is an open source project that provides a platform for easy engagement with AI Large Language Models (LLMs) using the ilab command-line interface ( CLI) tool. Large Language Models Known as LLMs, is a type of artificial intelligence that is capable of language generation or task processing. 
+      Synthetic Data Generation (SD G) A process where large LLMs (Large Language Models) are used, with human generated samples, to generate artificial data that then can be used to train other LLMs. 
+      Fine-tuning A technique where an LLM is trained to meet a specific objective: to know particular information or to do a particular task. LAB An acronym for " L arge-Scale A lignment for Chat B ots." Invented by IBM Research, LAB is a novel synthetic data-based and multi-phase training fine-tuning method for LLMs. InstructLab implements the LAB method during synthetic generation and training. Multi-phase training A fine-tuning strategy that the LAB method implements. During this process, a model is fine-tuned o n multiple datasets in separate phases. The model trains in multiple phases called epochs, which save as checkpoints. The best performing checkpoint is then used for trainin g in the following phase. The fully fine-tuned model is the best performing checkpoint from the final phase. Serving Often referred to as "serving a model", is the deploymen t of an LLM or trained model to a server. This process gives you the ability to interact with models as a chatbot. Inference When serving and chatting with a model, inferenc ing is when a model can process, deduct, and produce outputs based on input data. Taxonomy The LAB method is driven by taxonomies, an information classification method. On R HEL AI, you can customize a taxonomy tree that enables you to create models fine-tuned with your own data. Granite An open source (Apache 2.0) Large Language Model trained b y IBM. On RHEL AI you can download the Granite family models as a base LLM for customizing. PyTorch An optimized tensor library for deep learning on GPUs and CPUs. vLLM A me mory-efficient inference and serving engine library for LLMs. FSDP An acronym for Fully Shared Data Parallels . The Pytorch tool FSDP can distribute computing power across multiple devices on your hardware. This optimizes the training process and makes fine-tuning faster and more memory efficient. This tool shares the functionalities of DeepSpeed. DeepSpeed A Python library for optimizes LLM training and fine-tuning by distributing computing resource s on multiple devices. 
+      This tool shares the functionalities of FSDP. Deepspeed is currently the recommended hardware off loader for NVIDIA machines.
+    questions_and_answers:  
       - question: |
           What are 'knowledge' and 'skills' in the context of RHEL AI, and how do they differ?
         answer: |
@@ -36,11 +42,17 @@ seed_examples:
           What is the LAB method and how is it used in RHEL AI?
         answer: |
           The LAB method, an acronym for "Large-Scale Alignment for ChatBots," is a novel synthetic data-based and multi-phase training fine-tuning method for LLMs, invented by IBM Research. InstructLab, and by extension RHEL AI, implements the LAB method during synthetic generation and training. This method uses a taxonomy-based system for high-quality synthetic data generation (SDG) and multi-phase training to fine-tune LLMs effectively.
+  - context: |
+      With RHEL AI, you can download the open source licensed IBM Granite family of LLMs. Using the starter Granite model as a base, you can create your model using knowledge or skills data. You can keep these custom LLMs private or you can share them with the AI community.
+      Red Hat Enterprise Linux AI also allows you to serve and chat with Granite models created and fine-tuned by Red Hat and IBM.
       - question: |
           What are Granite models and how are they used with RHEL AI?
         answer: |
           Granite models are open-source (Apache 2.0 licensed) Large Language Models trained by IBM. With RHEL AI, users can download the Granite family of models to use as a base LLM for customisation. 
           Users can then fine-tune these starter Granite models with their own knowledge or skills data. RHEL AI also provides the capability to serve and interact with Granite models that have been created and fine-tuned by Red Hat and IBM.
+  - context: |
+      You can install RHEL AI and deploy the InstructLab tooling using a bootable RHEL container image provided by Red Hat. This RHEL AI image includes InstructLab, RHEL 9.4, and various inference and training software, including vLLM and DeepSpeed. After you boot this image, you can download var ious Red Hat and IBM developed Granite models to serve or train. 
+      The image and all the tools are compiled to specific Independent Software Vendors (ISV) hardware
       - question: |
           What software and tools are included in the RHEL AI bootable image?
         answer: |
