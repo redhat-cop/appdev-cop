@@ -1,0 +1,53 @@
+version: 3
+domain: astronomy 
+document_outline: | 
+  This document provides introductory information for Red Hat Enterprise Linux AI. 
+  This includes an overview of RHEL AI and the product architecture
+created_by: maha
+seed_examples:
+  - context: | 
+      Red Hat Enterprise Linux AI is a platform that allows you to develop enterprise applications on open source Large Language Models (LLMs). RHEL AI is built from the Red Hat InstructLab open source project. 
+      For more detailed information about InstructLab, see the "InstructLab and RHEL AI" section.
+    questions_and_answers:
+      - question: | 
+          What is Red Hat Enterprise Linux AI (RHEL AI)?
+        answer: | 
+          Red Hat Enterprise Linux AI (RHEL AI) is a platform designed for developing enterprise applications using open-source Large Language Models (LLMs). It is built upon the Red Hat InstructLab open-source project and provides tools for hosting LLMs, fine-tuning them with custom data, and interacting with the trained models. 
+          Essentially, it empowers users to contribute directly to LLMs and build AI-based applications like chatbots.
+      - question: |
+          How does RHEL AI enable users to customise LLMs?
+        answer: |
+          RHEL AI allows users to customise LLMs by using the LAB method, which is implemented by the InstructLab open-source project. Users can create and add their own "knowledge" or "skills" data into a Git repository. 
+          This data is then used to fine-tune a base model, such as one from the Granite family, with minimal machine learning expertise required. This customisation workflow involves steps like installing RHEL AI, adding data to a taxonomy tree via a CLI and Git, generating synthetic data, training the base model, and then serving the newly customised model for inference.
+      - question: |
+          What are 'knowledge' and 'skills' in the context of RHEL AI, and how do they differ?
+        answer: |
+          In RHEL AI, 'knowledge' and 'skills' are the types of data that can be added to a taxonomy tree to create a custom LLM. "Knowledge" refers to data and facts that provide the model with additional information to answer questions with greater accuracy. 
+          It's about what the model knows. 
+          "Skills", on the other hand, are capability domains that train the AI model on how to perform a task. 
+          Skills are categorised into compositional skills (freeform or grounded, allowing models to perform specific tasks) and foundational skills (involving maths, reasoning, and coding).
+      - question: |
+          What is the InstructLab project and its role in RHEL AI?
+        answer: |
+          InstructLab is an open-source AI project that facilitates contributions to Large Language Models. RHEL AI takes this foundation and builds an enterprise platform for LLM integration into applications. 
+          While InstructLab is intended for smaller-scale platforms like laptops, RHEL AI targets high-performing server platforms with dedicated Graphic Processing Units (GPUs). 
+          InstructLab implements the LAB (Large-scale Alignment for chatBots) technique, which involves a taxonomy-guided synthetic data generation process, multi-phase training, and a fine-tuning framework.
+      - question: |
+          What is the LAB method and how is it used in RHEL AI?
+        answer: |
+          The LAB method, an acronym for "Large-Scale Alignment for ChatBots," is a novel synthetic data-based and multi-phase training fine-tuning method for LLMs, invented by IBM Research. InstructLab, and by extension RHEL AI, implements the LAB method during synthetic generation and training. This method uses a taxonomy-based system for high-quality synthetic data generation (SDG) and multi-phase training to fine-tune LLMs effectively.
+      - question: |
+          What are Granite models and how are they used with RHEL AI?
+        answer: |
+          Granite models are open-source (Apache 2.0 licensed) Large Language Models trained by IBM. With RHEL AI, users can download the Granite family of models to use as a base LLM for customisation. 
+          Users can then fine-tune these starter Granite models with their own knowledge or skills data. RHEL AI also provides the capability to serve and interact with Granite models that have been created and fine-tuned by Red Hat and IBM.
+      - question: |
+          What software and tools are included in the RHEL AI bootable image?
+        answer: |
+          The RHEL AI bootable image is a container image provided by Red Hat that includes InstructLab and its tooling, RHEL 9.4, and various inference and training software. 
+          Specifically, it incorporates vLLM (a memory-efficient inference and serving engine library for LLMs) and DeepSpeed (a Python library for optimising LLM training and fine-tuning by distributing computing resources). This image and its tools are compiled for specific Independent Software Vendors (ISV) hardware.
+      - question: |
+          How does RHEL AI address the need for efficient LLM training and inference?
+        answer: |
+          RHEL AI addresses the need for efficient LLM training and inference through several integrated technologies. It targets high-performing server platforms with dedicated GPUs. 
+          The bootable image includes tools like vLLM for memory-efficient inference and serving, and DeepSpeed (or FSDP, Fully Shared Data Parallels) for optimising LLM training and fine-tuning by distributing computing power across multiple devices. These tools help accelerate the training process and make it more memory-efficient, particularly for NVIDIA machines where DeepSpeed is currently the recommended hardware offloader.
