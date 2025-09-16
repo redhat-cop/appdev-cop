@@ -54,11 +54,16 @@ seed_examples:
   - context: |
       You can install RHEL AI and deploy the InstructLab tooling using a bootable RHEL container image provided by Red Hat. This RHEL AI image includes InstructLab, RHEL 9.4, and various inference and training software, including vLLM and DeepSpeed. After you boot this image, you can download var ious Red Hat and IBM developed Granite models to serve or train. 
       The image and all the tools are compiled to specific Independent Software Vendors (ISV) hardware
+    questions_and_answers:
       - question: |
           What software and tools are included in the RHEL AI bootable image?
         answer: |
           The RHEL AI bootable image is a container image provided by Red Hat that includes InstructLab and its tooling, RHEL 9.4, and various inference and training software. 
           Specifically, it incorporates vLLM (a memory-efficient inference and serving engine library for LLMs) and DeepSpeed (a Python library for optimising LLM training and fine-tuning by distributing computing resources). This image and its tools are compiled for specific Independent Software Vendors (ISV) hardware.
+  - context: |
+      A Python library for optimizes LLM training and fine-tuning by distributing computing resources on multiple devices. This tool shares the functionalities of FSDP. 
+      Deepspeed is currently the recommended hardware off loader for NVIDIA machines.
+    questions_and_answers:
       - question: |
           How does RHEL AI address the need for efficient LLM training and inference?
         answer: |
