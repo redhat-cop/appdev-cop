@@ -1,5 +1,5 @@
 version: 3
-domain: astronomy 
+domain: technology 
 document_outline: | 
   This document provides introductory information for Red Hat Enterprise Linux AI. 
   This includes an overview of RHEL AI and the product architecture
