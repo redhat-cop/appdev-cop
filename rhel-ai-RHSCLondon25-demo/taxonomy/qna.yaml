@@ -45,6 +45,7 @@ seed_examples:
   - context: |
       With RHEL AI, you can download the open source licensed IBM Granite family of LLMs. Using the starter Granite model as a base, you can create your model using knowledge or skills data. You can keep these custom LLMs private or you can share them with the AI community.
       Red Hat Enterprise Linux AI also allows you to serve and chat with Granite models created and fine-tuned by Red Hat and IBM.
+    questions_and_answers:
       - question: |
           What are Granite models and how are they used with RHEL AI?
         answer: |
