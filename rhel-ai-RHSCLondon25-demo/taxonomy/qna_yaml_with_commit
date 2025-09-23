@@ -1,0 +1,174 @@
+version: 3
+domain: technology
+document_outline: |
+  This document provides introductory information for Red Hat Enterprise Linux AI. This includes an overview of RHEL AI and the product architecture
+created_by: maha
+seed_examples:
+  - context: |
+      Red Hat Enterprise Linux AI (RHEL AI) is a specialized platform designed to facilitate the development of enterprise applications using open-sour      ce Large Language Models (LLMs), originating from the Red Hat InstructLab project. It provides the capability to host and interact with LLMs, spe      cifically highlighting the open-source Granite family. A key feature is the ability to customize these models with unique data and skills through      the LAB method, even for users with limited machine learning experience, by using a Git repository for data management. Ultimately, RHEL AI aims       to empower users to directly enhance LLMs, enabling the efficient creation of AI-driven applications like chatbots.
+    questions_and_answers:
+      - question: |
+          What is Red Hat Enterprise Linux AI (RHEL AI)?
+        answer: |
+          RHEL AI (Red Hat Enterprise Linux AI) is a platform designed for developing enterprise applications using open-source Large Language Models (LLMs). It's built upon the Red Hat InstructLab open-source project.
+      - question: |
+          What are the main capabilities of RHEL AI?
+        answer: |
+          RHEL AI offers several key capabilities: it allows you to host an LLM and interact with the open-source Granite family of LLMs; it enables the creation and addition of custom knowledge or skills data using the LAB method in a Git repository, then fine-tuning a model on that data with minimal machine learning expertise; and it provides the ability to interact with the fine-tuned model that incorporates your specific data.
+      - question: |
+          How does RHEL AI relate to open-source LLMs?
+        answer: |
+          RHEL AI is fundamentally designed to work with open-source LLMs, allowing users to host and interact with models from families like Granite. It emphasizes an open-source approach to AI development.
+      - question: |
+          What is the significance of the "LAB method" in RHEL AI?
+        answer: |
+          The LAB method is a key feature that simplifies the process of adding custom knowledge or skills data. It allows users to contribute their own data through a Git repository, which is then used to fine-tune a model, even with limited machine learning background.
+      - question: |
+          Can users with limited machine learning experience utilize RHEL AI?
+        answer: |
+          Yes, RHEL AI is designed to be accessible to users with minimal machine learning background. Its features, particularly the LAB method for data contribution and model fine-tuning, aim to simplify complex AI development tasks.
+      - question: |
+          How does RHEL AI enable users to contribute to LLMs?
+        answer: |
+          RHEL AI empowers users to contribute directly to Large Language Models by allowing them to create and add their own knowledge or skills data. This data is then used to fine-tune a model, effectively enhancing the LLM's capabilities with custom information.
+      - question: |
+          What kind of applications can be built using RHEL AI?
+        answer: |
+          RHEL AI facilitates the easy and efficient building of AI-based applications. The provided source specifically mentions chatbots as an example of such applications.
+      - question: |
+          What is the underlying open-source project for RHEL AI?
+        answer: |
+          RHEL AI is built from the Red Hat InstructLab open-source project. This indicates its foundation in open-source principles and collaborative development.
+  - context: |
+      This glossary introduces fundamental concepts for interacting with Red Hat Enterprise Linux AI, focusing on tools and techniques for managing Large Language Models (LLMs). Key terms include InstructLab, an open-source platform for engaging with LLMs, and LAB, a multi-phase fine-tuning method invented by IBM Research. The process involves Synthetic Data Generation (SDG), where LLMs create artificial training data, and fine-tuning, which tailors LLMs for specific tasks. The document also explains the deployment and interaction with these models through "serving" and "inference," while highlighting the role of taxonomies in customizing model behavior and the use of open-source LLMs like Granite. Underlying technologies like PyTorch, vLLM, FSDP, and DeepSpeed are mentioned as crucial for optimizing the computational demands of training and serving LLMs.
+    questions_and_answers:
+      - question: |
+          What is InstructLab?
+        answer: |
+          InstructLab is an open-source project that offers a platform for interacting with AI Large Language Models (LLMs) using its ilab command-line interface (CLI) tool.
+      - question: |
+          How are Large Language Models (LLMs) trained and customized?
+        answer: |
+          LLMs can be trained and customized through several methods. One key technique is "fine-tuning," where an LLM is trained to achieve a specific objective, such as knowing particular information or performing a specific task. A related method is "Synthetic Data Generation (SDG)," where large LLMs, with human-generated samples, create artificial data that is then used to train other LLMs. The LAB method, invented by IBM Research, is a multi-phase training fine-tuning method that utilizes synthetic data and is implemented by InstructLab during synthetic generation and training.
+      - question: |
+          What is the LAB method and how does it work?
+        answer: |
+          LAB stands for "Large-Scale Alignment for Chat Bots." It's a novel, synthetic data-based, and multi-phase training fine-tuning method for LLMs developed by IBM Research. InstructLab implements the LAB method. It employs a "multi-phase training" strategy, where a model is fine-tuned on multiple datasets in separate phases (epochs). The best performing checkpoint from each phase is used for training in the subsequent phase, with the fully fine-tuned model being the best performing checkpoint from the final phase. The LAB method is also driven by "taxonomies," which are information classification methods, allowing users on RHEL AI to customize a taxonomy tree to create models fine-tuned with their own data.
+      - question: |
+          What is "serving a model" and "inference" in the context of LLMs?
+        answer: |
+          "Serving" a model refers to the deployment of an LLM or trained model to a server, enabling users to interact with it, often as a chatbot. "Inference" occurs when a served model processes, deduces, and produces outputs based on input data from these interactions.
+      - question: |
+          What are some of the tools and technologies used for optimizing LLM training and serving?
+        answer: |
+          Several tools and technologies are used for optimizing LLM training and serving. PyTorch is an optimized tensor library for deep learning on GPUs and CPUs. For memory-efficient inference and serving of LLMs, vLLM is a dedicated engine library. For optimizing the training process and making fine-tuning faster and more memory efficient, tools like FSDP (Fully Shared Data Parallels) and DeepSpeed distribute computing power across multiple devices. DeepSpeed is currently the recommended hardware offloader for NVIDIA machines.
+      - question: |
+          What is Granite and its role in RHEL AI?
+        answer: |
+          Granite is an open-source (Apache 2.0) Large Language Model trained by IBM. On RHEL AI, users can download the Granite family models to serve as a base LLM for further customization and fine-tuning.
+      - question: |
+          How do FSDP and DeepSpeed contribute to LLM training?
+        answer: |
+          FSDP (Fully Shared Data Parallels) and DeepSpeed are both tools designed to optimize LLM training and fine-tuning. They work by distributing computing power and resources across multiple devices on hardware, making the training process faster and more memory efficient. DeepSpeed is a Python library that specifically optimizes LLM training by distributing computing resources, and it is recommended for NVIDIA machines.
+      - question: |
+          What is a "taxonomy" in the context of the LAB method?
+        answer: |
+          In the LAB method, "taxonomy" refers to an information classification method that drives the process. On RHEL AI, users have the capability to customize a taxonomy tree. This customization enables them to create and fine-tune models using their own specific data, essentially guiding the model's learning based on their defined classification structure.
+  - context: |
+      InstructLab is an open-source project designed to make it easier for people to contribute to and customize Large Language Models (LLMs), even on personal computers, by using a technique called LAB for synthetic data generation and fine-tuning. RHEL AI, built upon InstructLab, offers an enterprise-grade platform for integrating these customized LLMs into applications, specifically targeting powerful server platforms with GPUs. Both tools aim to enable users to imbue LLMs with domain-specific knowledge to suit their unique needs.
+    questions_and_answers:
+      - question: |
+          What is the relationship between InstructLab and RHEL AI?
+        answer: |
+          InstructLab forms the open-source foundation upon which RHEL AI is built. InstructLab provides the core technology for contributing to and customizing LLMs, while RHEL AI extends this into an enterprise-grade platform with enhanced performance and scalability.
+      - question: |
+          What is the LAB technique?
+        answer: |
+          The LAB (Large-scale Alignment for chatBots) technique is a novel synthetic data-based fine-tuning method for LLMs implemented by InstructLab. It's a key part of how LLMs are customized.
+      - question: |
+          What are the main components of the LAB process?
+        answer: |
+          The LAB process, used for fine-tuning LLMs, consists of three main components: a taxonomy-guided synthetic data generation process, a multi-phase training process, and a fine-tuning framework.
+      - question: |
+          What kind of platforms is InstructLab intended for?
+        answer: |
+          InstructLab is intended for small-scale platforms, including laptops and personal computers, making it accessible for individual developers and smaller projects.
+      - question: |
+          What kind of platforms does RHEL AI target?
+        answer: |
+          RHEL AI targets high-performing server platforms that feature dedicated Graphic Processing Units (GPUs), indicating its focus on enterprise-level performance and demanding AI workloads.
+      - question: |
+          What is a key benefit of using InstructLab and RHEL AI?
+        answer: |
+          A key benefit of both InstructLab and RHEL AI is their ability to customize an LLM with domain-specific knowledge. This allows users to tailor an LLM for their distinct use cases, making it more relevant and effective for specific tasks or industries.
+  - context: |
+      "skills" and "knowledge" are fundamental data types used to customize large language models (LLMs), essentially fine-tuning them with specific information. Knowledge provides AI models with factual data, such as product documentation, enabling them to answer questions with greater accuracy and reference specific information. In contrast, skills train an AI model "how to do something," focusing on teaching the model to perform tasks, from freeform actions to grounded tasks requiring additional context, and even foundational abilities like math and coding. By incorporating both, users can build more precise and capable AI models tailored to their unique requirements.
+    questions_and_answers:
+      - question: |
+          What are the fundamental types of data that can be added to a taxonomy tree for an AI model?
+        answer: |
+          The fundamental types of data that can be added to a taxonomy tree are "Skill" and "Knowledge." These are crucial for creating custom LLM models fine-tuned with specific data.
+      - question: |
+          How do "Knowledge" and "Skills" differ in their purpose for an AI model?
+        answer: |
+          "Knowledge" provides an AI model with data, facts, and information, enabling it to answer questions with greater accuracy by referencing this data. "Skills," on the other hand, train an AI model on how to perform a task or function, teaching it capabilities rather than just providing factual information.
+      - question: |
+          What is the primary benefit of providing "Knowledge" to an AI model?
+        answer: |
+          The primary benefit of providing "Knowledge" is to enhance the model's ability to answer questions accurately by giving it additional data, facts, and reference materials. For example, providing product documentation as knowledge allows the model to learn and answer questions about that product.
+      - question: |
+          What are the main categories of "Skills" an AI model can acquire?
+        answer: |
+          Skills are broadly categorized into Compositional Skills and Foundation Skills.
+      - question: |
+          Explain the two types of "Compositional Skills."
+        answer: |
+          Compositional skills allow AI models to perform specific tasks or functions. They are divided into: Freeform compositional skills: These are performative skills that do not require additional context or information to function. Grounded compositional skills: These are performative skills that require additional context. An example would be teaching a model to read a table, where an example table layout serves as the additional context
+      - question: |
+          What kind of abilities do "Foundation Skills" encompass?
+        answer: |
+          Foundation skills are capabilities that involve core cognitive and logical functions such as math, reasoning, and coding.
+      - question: |
+          Can you give an example of how "Knowledge" would be used for an AI model?
+        answer: |
+          An example of using "Knowledge" would be creating a data set that includes all of a product's documentation. The AI model can then learn this information and accurately answer questions related to the product based on the provided documentation.
+      - question: |
+          Can you give an example of how a "Grounded compositional skill" would be used for an AI model?
+        answer: |
+          An example of a "Grounded compositional skill" would be teaching an AI model to read and interpret data from a table. The "additional context" required for this skill would be an example layout or schema of the table, which guides the model on how to understand and process such data.
+  - context: |
+       Red Hat Enterprise Linux AI (RHEL AI) offers a specialized environment for developing and deploying custom large language models (LLMs). It comes as a bootable container image, pre-loaded with InstructLab tooling and essential software like vLLM and DeepSpeed, optimized for specific hardware. The core of RHEL AI's customization lies in the InstructLab model alignment process, which uses a novel LAB (Large-Scale Alignment for ChatBots) method to fine-tune LLMs. This involves generating high-quality synthetic data (SDG) from user-provided domain-specific knowledge, then training open-source IBM Granite models with this data to create bespoke LLMs. Finally, RHEL AI facilitates serving these custom models for inference, giving users control over private or shareable AI solutions.
+    questions_and_answers:
+      - question: |
+          What is InstructLab and how does it contribute to RHEL AI?
+        answer: |
+          InstructLab is a key component within RHEL AI that facilitates LLM fine-tuning. It utilizes a novel approach called LAB (Large-Scale Alignment for ChatBots) which employs a taxonomy-based system for high-quality synthetic data generation (SDG) and multi-phase training. Users can leverage InstructLab through a CLI to create custom LLMs by tuning Granite base models with domain-specific knowledge.
+      - question: |
+          How does RHEL AI enable the creation of custom LLMs?
+        answer: |
+          RHEL AI offers a structured workflow for customizing LLMs. This involves installing and initializing RHEL AI, using a CLI and Git workflow to add "skills" and "knowledge" to a taxonomy tree, and then running Synthetic Data Generation (SDG) with a teacher model like mixtral-8x7B-Instruct to create numerous synthetic Q&A pairs. These pairs are then used by InstructLab to train a base model, with a judge model (e.g., prometheus-8x7B-V2.0) evaluating the performance of the newly trained model. Finally, the custom model can be served for inferencing using InstructLab with vLLM.
+      - question: |
+          What are "skills" and "knowledge" in the context of RHEL AI's customization workflow?
+        answer: |
+          In the RHEL AI customization workflow, "skills" and "knowledge" refer to the domain-specific information that users provide to the system. This information is used to enrich the taxonomy tree, which then guides the Synthetic Data Generation (SDG) process to create relevant training data. Effectively, these are the user-defined inputs that tailor the LLM to specific applications or expertise areas.
+      - question: |
+          What role do Granite models play in RHEL AI?
+        answer: |
+          The IBM Granite family of LLMs are open-source licensed models available with RHEL AI. They serve as the base models for customization. Users can download these starter Granite models and then fine-tune them with their own knowledge or skills data to create custom LLMs. RHEL AI also provides the capability to serve and interact with Granite models that have been pre-created and fine-tuned by Red Hat and IBM.
+      - question: |
+          What is Synthetic Data Generation (SDG) and how is it used in RHEL AI?
+        answer: |
+          Synthetic Data Generation (SDG) is a crucial step in RHEL AI's LLM customization workflow. It involves using a "teacher model" (such as mixtral-8x7B-Instruct) to generate hundreds or thousands of synthetic question-and-answer pairs. These pairs are created based on the user-provided domain-specific knowledge and samples, effectively expanding the training dataset without requiring extensive manual data annotation.
+      - question: |
+          How are custom LLMs evaluated and served in RHEL AI?
+        answer: |
+          After a base model is trained with the new synthetically generated data, its performance is evaluated by a "judge model," such as prometheus-8x7B-V2.0. Once the custom model is deemed satisfactory, RHEL AI allows it to be served for inferencing using InstructLab in conjunction with vLLM, making the custom LLM available for practical applications.
+      - question: |
+          Can custom LLMs created with RHEL AI be kept private or shared?
+        answer: |
+          Yes, RHEL AI offers flexibility regarding the visibility of custom LLMs. Users have the option to keep the LLMs they create private, thereby retaining proprietary control over their specialized models. Alternatively, they can choose to share these custom LLMs with the broader AI community, fostering collaboration and contributing to the open-source ecosystem.
+document:
+  repo: https://github.com/mahalakshmiviju/appdev-cop.git
+  commit: 9e910fb #commit number
+  patterns:
+    - rhel-ai-RHSCLondon25-demo/taxonomy/rhel-ai-getting-started.md
