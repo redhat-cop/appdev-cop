@@ -1,1 +1,10 @@
+# Docling
+
+## Docling Project Link - https://docling-project.github.io/docling/ 
+
+## Docling Architecture
+
+
+
+pip install docling sentence-transformers faiss-cpu langchain-text-splitters pydantic[dotenv] typer rich
 
