@@ -15,6 +15,18 @@ In this session, we will start explaining a preprocessing of documents from mult
 
 ## Problem Statement
 
+
 ## Red Hat Enterprise Linux AI (RHEL AI)
+
+### What is RHEL AI ?
+
+RHEL AI is a foundational model platform from Red Hat for developing, testing, tuning and deploying Large-Language models (LLms) for enterprise use.
+Its combines of several plaform like:.
+
+* InstructLab 
+* Granite Open Source LLMs
+* Pytorch 
+* Red Hat AI Inference Server
+* Builtin Drivers for Accelerators 
 
 
