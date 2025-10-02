@@ -2,7 +2,7 @@ version: 3
 domain: technology
 document_outline: |
   This document provides introductory information for Red Hat Enterprise Linux AI. This includes an overview of RHEL AI and the product architecture
-created_by: maha
+created_by: Maha
 seed_examples:
   - context: |
       Red Hat Enterprise Linux AI (RHEL AI) is a specialized platform designed to facilitate the development of enterprise applications using open-sour      ce Large Language Models (LLMs), originating from the Red Hat InstructLab project. It provides the capability to host and interact with LLMs, spe      cifically highlighting the open-source Granite family. A key feature is the ability to customize these models with unique data and skills through      the LAB method, even for users with limited machine learning experience, by using a Git repository for data management. Ultimately, RHEL AI aims       to empower users to directly enhance LLMs, enabling the efficient creation of AI-driven applications like chatbots.
