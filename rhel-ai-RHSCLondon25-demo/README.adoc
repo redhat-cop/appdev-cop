@@ -15,6 +15,7 @@ In this session, we will start explaining a preprocessing of documents from mult
 
 ## Problem Statement
 
+Knowledge bases are spread across various tools like Confluence, Bitbucket, GitHub, and PDFs, leading to difficulty in finding information, duplication, and outdated content
 
 ## Red Hat Enterprise Linux AI (RHEL AI)
 
