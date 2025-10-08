@@ -15,14 +15,20 @@ In this session, we will start explaining a preprocessing of documents from mult
 
 ## Problem Statement
 
-Knowledge bases are spread across various tools like Confluence, Bitbucket, GitHub, and PDFs, leading to difficulty in finding information, duplication, and outdated content
+The core problem is that crucial organisational knowledge—including Company policies, Employee Handbooks, Regulatory Compliance Standards and Standard Operating Procedures (SOPs) s severely fragmented and siloed across multiple, disparate platforms such as GitLab, Bitbucket, Confluence, GitHub, and various unindexed PDFs.
+This lack of a single source of truth leads to three critical negative outcomes:
+
+  1. Inefficiency and Time Waste: Employees spend a significant and unacceptable amount of time navigating and searching multiple tools, directly reducing productivity and diverting focus from core responsibilities.
+  2. Duplication and Inconsistency: The scattering of data leads to the creation of duplicate, non-standardized, and often conflicting or outdated content, which organizations use at their own risk.
+  3. High Risk of Non-Compliance: The difficulty in retrieving the authoritative, current version of a policy or standard increases the risk of employees making decisions based on incorrect information or failing to adhere to mandatory policies.
+The clear solution required is the implementation of a centralised AI assistant capable of unifying this scattered data, providing employees with quick, reliable, and single-point access to the most accurate knowledge.
 
 ## Red Hat Enterprise Linux AI (RHEL AI)
 
 ### What is RHEL AI ?
 
-RHEL AI is a foundational model platform from Red Hat for developing, testing, tuning and deploying Large-Language models (LLms) for enterprise use.
-Its combines of several plaform like:.
+RHEL AI is a foundational model platform from Red Hat for developing, testing, tuning and deploying Large-Language models (LLms) for enterprise use. It helps build AI Assitants to resolve the knowledge base problem.
+Its combines of several platform like:.
 
 * InstructLab 
 * Granite Open Source LLMs
