@@ -1,0 +1,32 @@
+# RHEL AI Red Hat Summit Connet London 2025
+
+# Unlocking Your Company’s Knowledge: Building an AI Assistant with RHEL AI 
+
+# By Maha & Paulo - RHEL AI
+
+## Overview
+
+### Abstract - 1
+Build a smart assistant using RHEL AI that learns from your internal knowledge base, delivering fast, accurate answers from technical documentation
+
+### Abstract - 2
+Nowadays, it’s more and more common for corporations with a large growth knowledge base, which takes hours to get the correct information or to make sure not to duplicate content. How can we use smart AI to help to solve this problem? And how does RHEL AI fine-tune help quickly unlock this for you?
+In this session, we will start explaining a preprocessing of documents from multiple internal sources, cleaning and preparing the data, applying RHEAL AI fine-tune to faster, more effective retrieval, using taxonomy to tailor to the organisation's language, processes and priorities. During this session, you will also learn how the Retrieval Augmented Generation (RAG) pipeline can combine real-time documentation retrieval with the model to deliver fact-based context responses. Finally, we will demonstrate the AI assistant as an internal chatbot to demonstrate the use case.
+
+## Problem Statement
+
+
+## Red Hat Enterprise Linux AI (RHEL AI)
+
+### What is RHEL AI ?
+
+RHEL AI is a foundational model platform from Red Hat for developing, testing, tuning and deploying Large-Language models (LLms) for enterprise use.
+Its combines of several plaform like:.
+
+* InstructLab 
+* Granite Open Source LLMs
+* Pytorch 
+* Red Hat AI Inference Server
+* Builtin Drivers for Accelerators 
+
+
