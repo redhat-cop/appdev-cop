@@ -36,4 +36,6 @@ Its combines of several platform like:.
 * Red Hat AI Inference Server
 * Builtin Drivers for Accelerators 
 
+![RHEL-AI](https://github.com/mahalakshmiviju/appdev-cop/blob/main/rhel-ai-RHSCLondon25-demo/Images/RHELAI.png)
+
 
