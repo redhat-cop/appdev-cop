@@ -39,5 +39,28 @@ Its combines of several platform like:.
 ![RHEL AI](Images/RHELAI.png)
 
 
+## Collecting Knowledge Base
+
+### Purpose:
+To prepare and organize knowledge and skills data in support of taxonomy development.  
+
+### Implementation Details:
+
+*  Knowledge Integration:
+   The generic RHEL AI instructions were incorporated into the knowledge and skills datasets to improve training quality and contextual accuracy.
+
+*  Documentation Conversion:
+   The Docling framework is used to automate documentation conversion and processing.
+
+*  Processing Workflow:
+   Docling parses and normalizes content from multiple document formats, simplifying the overall documentation pipeline.
+
+*  Key Benefits:
+    - Automated document parsing and conversion
+    - Consistent data structure across formats
+    - Improved efficiency and scalability
+
+References: https://docling-project.github.io/docling/
+
 
 
