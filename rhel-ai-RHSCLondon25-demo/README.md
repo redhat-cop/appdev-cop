@@ -39,5 +39,11 @@ Its combines of several platform like:.
 ![RHEL AI](Images/RHELAI.png)
 
 
+## Collecting Knowledge Base
+
+We took generic RHEL AI instructions and used Docling project to convert our Documentation. Docling simplifies document processing, parsing diverse formats.
+
+References: https://docling-project.github.io/docling/
+
 
 
