@@ -64,3 +64,5 @@ References: https://docling-project.github.io/docling/
 
 ## How the Fine-tuning process flow works ?
 
+![Fine-Tuning WorkFlow](Images/Fine-Tuning.png)
+
