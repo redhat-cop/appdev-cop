@@ -64,3 +64,27 @@ References: https://docling-project.github.io/docling/
 
 ## How the Fine-tuning process flow works ?
 
+![Fine-Tuning WorkFlow](Images/Fine-Tuning.png)
+
+### Taxonomy
+
+Taxonomy is the way we organize how the model learns. It’s essentially a tree that combines knowledge and skills so our assistant can understand both facts and how to perform tasks.
+
+On the knowledge side, we provide datasets of information — facts, policies, product manuals — that help the model answer questions more accurately. This is usually added through simple qna.yaml files, where we map questions to answers based on our documents.
+
+* Knowledge -
+
+      Datasets that consists of Information and facts
+
+* Skills -
+
+      Datasets where you can teach the model how to do a task. 
+      Its has two categories :-
+    
+      Compositional skills
+      - Freeform: perform tasks without extra context.
+      - Grounded: require context (e.g., reading a table with layout info).
+      Foundation skills
+      - Core abilities like math, reasoning, and coding.
+
+
