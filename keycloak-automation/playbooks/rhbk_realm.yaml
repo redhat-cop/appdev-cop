@@ -1,0 +1,34 @@
+
+---
+- name: Playbook for rhbk Hosts
+  hosts: keycloak
+  gather_facts: false
+  vars:
+    rhbk_server_url: "http://localhost:8080"
+    rhbk_admin_password: "redhat123"
+    rhbk_admin_user: "keycloak-admin"
+    rhbk_no_log: false
+    rhbk_context: ""
+
+    rhbk_clients:
+      - name: TestClient1
+        client_id: TestClient1
+        roles:
+          - TestClient1Admin
+          - TestClient1User
+        realm: TestRealm
+        public_client: true
+        web_origins:
+          - http://testclient1origin/application
+          - http://testclient1origin/other
+        users:
+          - username: TestUser
+            password: password123
+            client_roles:
+              - client: TestClient1
+                role: TestClient1User
+                realm: TestRealm
+  roles:
+    - role: redhat.rhbk.rhbk_realm
+      rhbk_realm: TestRealm
+      
