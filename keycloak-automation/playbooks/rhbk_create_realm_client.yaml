@@ -1,0 +1,55 @@
+---
+- name: Configure RHBK using token authentication
+  hosts: localhost
+  gather_facts: false
+  no_log: false
+  vars:
+    rhbk_server_url: "http://localhost:8080"
+    rhbk_admin_user: "keycloak-admin"
+    rhbk_admin_password: "redhat123"
+    rhbk_admin_realm: "master"
+   
+  tasks:
+    - name: Generate admin token
+      uri:
+        url: "{{ rhbk_server_url }}/realms/{{ rhbk_admin_realm }}/protocol/openid-connect/token"
+        method: POST
+        body:
+          grant_type: password
+          client_id: admin-cli
+          username: "{{ rhbk_admin_user }}"
+          password: "{{ rhbk_admin_password }}"
+        body_format: form-urlencoded
+        return_content: yes
+        status_code: 200
+      register: token_response
+
+    - name: Set RHBK token fact
+      set_fact:
+        rhbk_token: "{{ token_response.json.access_token }}"
+
+    - name: Create RHBK realm using token
+      ansible.builtin.include_role:
+        name: redhat.rhbk.rhbk_realm
+        rhbk_realm: TestRealm
+      vars:
+        rhbk_realm: "{{ rhbk_realm_name }}"
+        rhbk_token: "{{ rhbk_token }}"
+        rhbk_server_url: "{{ rhbk_server_url }}"
+        rhbk_validate_certs: "{{ rhbk_validate_certs }}"
+
+    - name: Create RHBK clients using token
+      ansible.builtin.include_role:
+        name: redhat.rhbk.rhbk_client
+      loop: "{{ rhbk_clients }}"
+      loop_control:
+        loop_var: rhbk_client
+      vars:
+        rhbk_token: "{{ rhbk_token }}"
+        rhbk_server_url: "{{ rhbk_server_url }}"
+        rhbk_validate_certs: false
+        rhbk_realm: "TestRealm"
+        rhbk_client_id: "TestClient1"
+        rhbk_client_name: "TestClient1"
+        rhbk_client_public: ""
+        rhbk_client_web_origins: "{{ rhbk_client.web_origins }}"
