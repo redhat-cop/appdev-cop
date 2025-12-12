@@ -1,0 +1,32 @@
+---
+- import_playbook: generate_rhbk_admin_token.yaml
+
+- name: Add steps to subflow in RHBK Realm
+  hosts: localhost
+
+
+  vars:
+    rhbk_realm: "TestRealm"
+    no_log: false
+    rhbk_url: "http://localhost:8080"
+    alias: "Username Password Form"
+    rhbk_subflow_alias: "my-subflow"
+    provider: "auth-username-password-form"
+  
+  tasks:
+    - name: Add a step to Subflow {{ rhbk_subflow_alias }}
+      uri:
+        url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/authentication/flows/{{ rhbk_subflow_alias }}/executions/execution"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ token.json.access_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          alias: "{{ alias }}"
+          provider: "{{ provider }}"
+        status_code: [201, 409]
+      register: subflow_response
+      no_log: "{{ no_log }}"
+    
+      
