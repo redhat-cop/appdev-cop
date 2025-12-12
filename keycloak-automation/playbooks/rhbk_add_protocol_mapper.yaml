@@ -1,0 +1,63 @@
+---
+- import_playbook: generate_rhbk_admin_token.yaml
+
+- name: Create Client Scope in RHBK Realm
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    rhbk_realm: "TestRealm"
+    client_scope_name: "TestClientScope"
+    no_log: false
+    rhbk_validate_certs: false
+    rhbk_url: "http://localhost:8080"
+  
+
+  tasks:
+  - name: Get existing client scopes
+    uri:
+      url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/client-scopes"
+      method: GET
+      headers:
+        Authorization: "Bearer {{ rhbk_token }}"
+      validate_certs: false
+      return_content: true
+      status_code: 200
+    register: scopes
+  
+  - name: Extract client scope ID
+    set_fact:
+      client_scope_id: >-
+        {{ (scopes.json | selectattr('name', 'equalto', client_scope_name) | list | first).id }}
+
+  - name: Show client scope ID
+    debug:
+      msg: "Client Scope ID = {{ client_scope_id }}"
+
+  - name: Add mapper to client scope
+    uri:
+      url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/client-scopes/{{ client_scope_id }}/   protocol-mappers/models"
+      method: POST
+      headers:
+        Authorization: "Bearer {{ token.json.access_token }}"
+        Content-Type: "application/json"
+      body_format: json
+      body:
+        name: "{{ item.name }}"
+        protocol: "openid-connect"
+        protocolMapper: "oidc-usermodel-attribute-mapper"
+        config:
+          "user.attribute": "{{ item.user_attribute }}"
+          "claim.name": "{{ item.claim_name }}"
+          "jsonType.label": "String"
+          "id.token.claim": "true"
+          "access.token.claim": "true"
+          "userinfo.token.claim": "true"
+      status_code: [201, 409]
+      validate_certs: "{{ rhbk_validate_certs }}"
+    loop:
+      - { name: "email", user_attribute: "email", claim_name: "email" }
+      - { name: "firstName", user_attribute: "firstName", claim_name: "given_name" }
+      - { name: "username", user_attribute: "username", claim_name: "preferred_username" }
+    register: mapper_response
+    no_log: "{{ no_log }}"
