@@ -1,0 +1,36 @@
+---
+- name: Generate RHBK Keycloak Token
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    keycloak_url: "http://localhost:8080"
+    keycloak_context: ""
+    keycloak_admin_user: "keycloak-admin"
+    keycloak_admin_password: "redhat123"
+    keycloak_auth_client: "admin-cli"
+    keycloak_no_log: false
+
+  tasks:
+    - name: Generate keycloak auth token
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}{{ keycloak_context }}/realms/master/protocol/openid-connect/token"
+        method: POST
+        body: "client_id={{ keycloak_auth_client }}&username={{ keycloak_admin_user }}&password={{ keycloak_admin_password }}&grant_type=password"
+        validate_certs: false
+      no_log: "{{ keycloak_no_log | default('True') }}"
+      register: keycloak_auth_response
+      until: keycloak_auth_response.status == 200
+      retries: 5
+      delay: 2
+
+    - name: Set RHBK token fact
+      ansible.builtin.set_fact:
+        rhbk_token: "{{ keycloak_auth_response.json.access_token }}"
+      no_log: "{{ keycloak_no_log | default('True') }}"
+  
+    - name: Display RHBK token
+      ansible.builtin.debug:
+        msg: "RHBK Token: {{ rhbk_token }}"
+      no_log: "{{ keycloak_no_log | default('True') }}"
+      
