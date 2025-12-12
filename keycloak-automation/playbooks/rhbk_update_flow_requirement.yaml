@@ -1,0 +1,58 @@
+---
+- import_playbook: generate_rhbk_admin_token.yaml
+
+- name: Update a subflow or an exection requirement in RHBK Realm
+  hosts: localhost
+
+  vars:
+    rhbk_realm: "TestRealm"
+    no_log: false
+    rhbk_url: "http://localhost:8080"
+    rhbk_subflow_alias: "my-subflow"
+    rhbk_authentication_name: "Browser_with_two_factors"
+    requirement: "ALTERNATIVE" # Possible values: REQUIRED, ALTERNATIVE, DISABLED, CONDITIONAL, OPTIONAL
+
+  tasks:
+    - name: Get executions in Subflow {{ rhbk_subflow_alias }}
+      uri:
+        url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/authentication/flows/{{ rhbk_authentication_name }}/executions"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ token.json.access_token }}"
+        validate_certs: false
+        return_content: true
+        status_code: 200
+      register: executions_response
+      no_log: "{{ no_log }}"
+  
+   
+    - name: Display executions
+      debug:
+        var: executions_response.json
+      no_log: "{{ no_log }}"
+
+    - name: Extract execution ID for auth-password
+      set_fact:
+        execution_id: >-
+          {{ (executions_response.json | selectattr('displayName', 'equalto', rhbk_subflow_alias) | list | first).id }}
+      no_log: "{{ no_log }}"
+   
+    - name: Display execution ID
+      debug:
+        msg: "Execution ID = {{ execution_id }}"
+      no_log: "{{ no_log }}"
+
+    - name: Update requirement for {{ rhbk_subflow_alias }}
+      uri:
+        url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/authentication/flows/{{ rhbk_authentication_name }}/executions"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ token.json.access_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: "{{ execution_id }}"
+          requirement: "{{ requirement }}"
+          priority: 0
+        status_code: 204
+      no_log: "{{ no_log }}"  
