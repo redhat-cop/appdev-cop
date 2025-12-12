@@ -1,0 +1,33 @@
+---
+- import_playbook: generate_rhbk_admin_token.yaml
+
+- name: Create Authentication in RHBK Realm
+  hosts: localhost
+
+
+  vars:
+    rhbk_realm: "TestRealm"
+    
+    no_log: false
+    rhbk_url: "http://localhost:8080"
+    rhbk_authentication_name: "Browser_with_two_factors"
+
+  tasks:
+    - name: Add Authentication Flow (Top Level)
+      uri:
+        url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/authentication/flows"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ token.json.access_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          alias: "{{ rhbk_authentication_name }}"
+          description: "created via ansible"
+          providerId: "basic-flow"
+          topLevel: true
+          builtIn: false
+        status_code: [201, 409]
+      no_log: "{{ no_log }}"
+
+   
