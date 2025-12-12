@@ -1,0 +1,98 @@
+---
+- name: Create client scope in RHBK
+  hosts: keycloak
+  gather_facts: false
+
+  vars:
+    rhbk_url: "http://localhost:8080"
+    rhbk_admin_user: "keycloak-admin"
+    rhbk_admin_password: "redhat123"
+    rhbk_admin_realm: "master"
+    rhbk_validate_certs: false
+    no_log: false
+    rhbk_realm: "TestRealm"
+    client_scope_name: "TestClientScope"
+
+  tasks:
+  - name: Generate Keycloak admin token
+    uri:
+      url: "{{ rhbk_url }}/realms/{{ rhbk_admin_realm }}/protocol/openid-connect/token"
+      method: POST
+      body_format: form-urlencoded
+      body:
+        grant_type: password
+        client_id: admin-cli
+        username: "{{ rhbk_admin_user }}"
+        password: "{{ rhbk_admin_password }}"
+      status_code: 200
+      validate_certs: false
+    register: token
+    no_log: "{{ no_log }}"
+
+  - name: Get list of existing client scopes
+    uri:
+      url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/client-scopes"
+      method: GET
+      headers:
+        Authorization: "Bearer {{ token.json.access_token }}"
+      validate_certs: false
+      return_content: true
+    register: scopes
+  
+  - name: Show existing client scopes
+    debug:
+      var: scopes.json
+    
+  - name: Create Realm Client Scope
+    uri:
+      url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/client-scopes"
+      method: POST
+      headers:
+        Authorization: "Bearer {{ token.json.access_token }}"
+        Content-Type: "application/json"
+      body_format: json
+      body:
+        name: "{{ client_scope_name }}"
+        description: "Test Client Scope created via Ansible"
+        protocol: "openid-connect"
+      status_code: [201, 409]
+      validate_certs: "{{ rhbk_validate_certs }}"
+    no_log: "{{ no_log }}"
+    when: (scopes.json | selectattr('name', 'equalto', client_scope_name) | list | length) == 0
+
+  - name: Extract client scope ID
+    set_fact:
+      client_scope_id: >-
+        {{ (scopes.json | selectattr('name', 'equalto', client_scope_name) | list | first).id }}
+
+  - name: Show client scope ID
+    debug:
+      msg: "Client Scope ID = {{ client_scope_id }}"
+
+  - name: Add mapper to client scope
+    uri:
+      url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/client-scopes/{{ client_scope_id }}/protocol-mappers/models"
+      method: POST
+      headers:
+        Authorization: "Bearer {{ token.json.access_token }}"
+        Content-Type: "application/json"
+      body_format: json
+      body:
+        name: "{{ item.name }}"
+        protocol: "openid-connect"
+        protocolMapper: "oidc-usermodel-attribute-mapper"
+        config:
+          "user.attribute": "{{ item.user_attribute }}"
+          "claim.name": "{{ item.claim_name }}"
+          "jsonType.label": "String"
+          "id.token.claim": "true"
+          "access.token.claim": "true"
+          "userinfo.token.claim": "true"
+      status_code: [201, 409]
+      validate_certs: "{{ rhbk_validate_certs }}"
+    loop:
+      - { name: "email", user_attribute: "email", claim_name: "email" }
+      - { name: "firstName", user_attribute: "firstName", claim_name: "given_name" }
+      - { name: "username", user_attribute: "username", claim_name: "preferred_username" }
+    register: mapper_response
+    no_log: "{{ no_log }}"
