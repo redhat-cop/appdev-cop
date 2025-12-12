@@ -1,0 +1,31 @@
+---
+- import_playbook: generate_rhbk_admin_token.yaml
+
+- name: Create Client Scope in RHBK Realm
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    rhbk_realm: "TestRealm"
+    client_scope_name: "TestClientScope"
+    no_log: false
+    rhbk_validate_certs: false  
+    rhbk_url: "http://localhost:8080"
+
+  tasks:
+  - name: Create Client Scope
+    uri:
+      url: "{{ rhbk_url }}/admin/realms/{{ rhbk_realm }}/client-scopes"
+      method: POST
+      headers:
+        Authorization: "Bearer {{ token.json.access_token }}"
+        Content-Type: "application/json"
+      body_format: json
+      body:
+        name: "{{ client_scope_name }}"
+        description: "Test Client Scope created via Ansible"
+        protocol: "openid-connect"
+      status_code: [201, 409]
+      validate_certs: "{{ rhbk_validate_certs }}"
+    no_log: "{{ no_log }}"
+    #when: (scopes.json | selectattr('name', 'equalto', client_scope_name) | list | length) == 0
