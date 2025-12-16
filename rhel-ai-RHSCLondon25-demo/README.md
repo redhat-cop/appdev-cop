@@ -87,4 +87,4 @@ On the knowledge side, we provide datasets of information — facts, policies, p
       Foundation skills
       - Core abilities like math, reasoning, and coding.
 
-
+![Taxonomy](Images/Taxonomy-pic.png)
