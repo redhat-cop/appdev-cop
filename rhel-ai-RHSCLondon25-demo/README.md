@@ -70,6 +70,11 @@ References: https://docling-project.github.io/docling/
 
 Taxonomy is the way we organize how the model learns. It’s essentially a tree that combines knowledge and skills so our assistant can understand both facts and how to perform tasks.
 
+There are a few supported knowledge document types that you can use for training the starter Granite LLM. The current supported document types include:
+
+* Markdown
+* PDF
+
 On the knowledge side, we provide datasets of information — facts, policies, product manuals — that help the model answer questions more accurately. This is usually added through simple qna.yaml files, where we map questions to answers based on our documents.
 
 * Knowledge -
@@ -87,4 +92,24 @@ On the knowledge side, we provide datasets of information — facts, policies, p
       Foundation skills
       - Core abilities like math, reasoning, and coding.
 
+Taxonomy File (QNA.YAML) - rhel-ai-RHSCLondon25-demo/taxonomy/qna_yaml_with_commit
+
 ![Taxonomy](Images/Taxonomy-pic.png)
+
+### Synthetic Data Generation (SDG)
+
+Synthetic Data Generation — process of expanding small seed examples into large training datasets. Uses a “teacher” large language model to generate Q&A variations or skill examples. The pipeline then scores, filters, and keeps only the most relevant and accurate pairs. The end result is a high-quality synthetic dataset we can use to fine-tune our AI assistant.
+
+### Training a Model
+
+Once we have our taxonomy and synthetic data, RHEL AI uses them to train a domain-specific model. The training follows a multi-phase process, where the system runs several stages of training and evaluation. At each stage, it produces checkpoints, and only the best-scoring checkpoint is carried forward. This iterative process ensures we end up with a high-quality model that is fine-tuned with our domain knowledge and skills.
+
+### Evaluating the Model
+
+If you want to measure the improvements of your new model, you can compare its performance to the base model with the evaluation process. You can also chat with the model directly to qualitatively identify whether the new model has learned the knowledge you created. If you want more quantitative results of the model improvements, you can run the evaluation process in the RHEL AI CLI
+
+### Serving and Chatting with your New Model
+
+After training, we deploy the model by serving it. This step makes the model available on our machine as an endpoint. Once it’s served, we can interact with it directly — chatting with the newly trained model and testing how well it responds using the knowledge and skills we taught it.
+Serving makes the model available on your machine as an endpoint. Once served, you can interact and chat with the newly trained model in real time.
+
