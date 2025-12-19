@@ -113,3 +113,4 @@ If you want to measure the improvements of your new model, you can compare its p
 After training, we deploy the model by serving it. This step makes the model available on our machine as an endpoint. Once it’s served, we can interact with it directly — chatting with the newly trained model and testing how well it responds using the knowledge and skills we taught it.
 Serving makes the model available on your machine as an endpoint. Once served, you can interact and chat with the newly trained model in real time.
 
+demo
