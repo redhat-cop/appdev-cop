@@ -127,5 +127,6 @@ ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowl
 
 ilab model train --pipeline=simple --device=cuda
 
+ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
 
 
