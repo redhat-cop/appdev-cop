@@ -120,4 +120,6 @@ Serving makes the model available on your machine as an endpoint. Once served, y
 
 ![QNA](Images/qna_yaml_format.png)
 
+![Commit_Details](Images/commit_patterns_update.png)
+
 
