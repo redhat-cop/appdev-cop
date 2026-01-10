@@ -116,3 +116,8 @@ Serving makes the model available on your machine as an endpoint. Once served, y
 
 ## DEMO
 
+
+
+![QNA](Images/qna_yaml_format.png)
+
+
