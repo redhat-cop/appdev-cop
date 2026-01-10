@@ -125,14 +125,14 @@ Deployed RHEL AI VM with an NVIDIA GPU
     - g6.xlarge (1x L4 with 24GB GPU memory)
 
 ```
- cat /etc/os-release | grep VARIANT
- VARIANT="RHEL AI"
- VARIANT_ID=rhel_ai
+ # cat /etc/os-release | grep VARIANT
+   VARIANT="RHEL AI"
+   VARIANT_ID=rhel_ai
 
 ```
 
 ``` 
-ilab --version 
+# ilab --version 
 ilab, version 0.26.1
 
 ```
@@ -140,7 +140,7 @@ ilab, version 0.26.1
 #### Initialize the config (InstructLab CLI)
 
 ```
-ilab config init
+# ilab config init
 ``` 
 
 This command use to configure hardware vendor your system falls into and specific hardware configuration that most closely matches your system 
