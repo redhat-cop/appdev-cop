@@ -116,6 +116,38 @@ Serving makes the model available on your machine as an endpoint. Once served, y
 
 ## DEMO
 
+### Environment Setup and Installation
+
+Deployed RHEL AI VM with an NVIDIA GPU 
+
+* RHEL AI
+* NVIDIA GPU
+    - g6.xlarge (1x L4 with 24GB GPU memory)
+
+```
+ cat /etc/os-release | grep VARIANT
+ VARIANT="RHEL AI"
+ VARIANT_ID=rhel_ai
+
+```
+
+``` 
+ilab --version 
+ilab, version 0.26.1
+
+```
+
+#### Initialize the config (InstructLab CLI)
+
+```
+ilab config init
+``` 
+
+This command use to configure hardware vendor your system falls into and specific hardware configuration that most closely matches your system 
+
+
+
+
 
 
 ![QNA](Images/qna_yaml_format.png)
@@ -123,10 +155,10 @@ Serving makes the model available on your machine as an endpoint. Once served, y
 ![Commit_Details](Images/commit_patterns_update.png)
 
 
-ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
+``` ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1 ```
 
-ilab model train --pipeline=simple --device=cuda
+``` ilab model train --pipeline=simple --device=cuda ```
 
-ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
+``` ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf ```
 
 
