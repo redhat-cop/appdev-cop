@@ -125,5 +125,7 @@ Serving makes the model available on your machine as an endpoint. Once served, y
 
 ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
 
+ilab model train --pipeline=simple --device=cuda
+
 
 
