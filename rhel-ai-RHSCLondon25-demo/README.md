@@ -155,10 +155,16 @@ This command use to configure hardware vendor your system falls into and specifi
 ![Commit_Details](Images/commit_patterns_update.png)
 
 
-``` ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1 ```
+```
+ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
+```
 
-``` ilab model train --pipeline=simple --device=cuda ```
+``` 
+ilab model train --pipeline=simple --device=cuda
+```
 
-``` ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf ```
+```
+ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
+```
 
 
