@@ -139,18 +139,20 @@ Deployed RHEL AI VM with an NVIDIA GPU
 
 #### Initialize the config (InstructLab CLI)
 
+This command use to configure hardware vendor your system falls into and specific hardware configuration that most closely matches your system
+
 ```
   # ilab config init
 ``` 
 
-This command use to configure hardware vendor your system falls into and specific hardware configuration that most closely matches your system 
+ 
 
-
-
-
+#### Taxonomy - QNA File & Pattern update
 
 
 ![QNA](Images/qna_yaml_format.png)
+
+
 
 ![Commit_Details](Images/commit_patterns_update.png)
 
