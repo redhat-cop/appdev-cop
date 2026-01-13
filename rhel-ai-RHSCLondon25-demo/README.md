@@ -132,15 +132,15 @@ Deployed RHEL AI VM with an NVIDIA GPU
 ```
 
 ``` 
-# ilab --version 
-ilab, version 0.26.1
+  # ilab --version 
+    ilab, version 0.26.1
 
 ```
 
 #### Initialize the config (InstructLab CLI)
 
 ```
-# ilab config init
+  # ilab config init
 ``` 
 
 This command use to configure hardware vendor your system falls into and specific hardware configuration that most closely matches your system 
@@ -156,15 +156,15 @@ This command use to configure hardware vendor your system falls into and specifi
 
 
 ```
-ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
+  # ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
 ```
 
 ``` 
-ilab model train --pipeline=simple --device=cuda
+  # ilab model train --pipeline=simple --device=cuda
 ```
 
 ```
-ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
+  # ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
 ```
 
 
