@@ -169,9 +169,16 @@ Synthetic data was generated using the " ilab data generate " command based on t
 * --pipeline simple: Uses the simple SDG pipeline suitable for PoC and initial model development
 * --gpus 1: Enables GPU acceleration for faster synthetic data generation
 
+#### Model Training
+
+The synthetic data generated in the previous step was used to train the AI Model using the InstructLab training pipeline
+
 ``` 
   # ilab model train --pipeline=simple --device=cuda
 ```
+##### Explanation
+* --pipeline simple: Ensures compatibility with the SDG pipeline
+* --device cuda: Uses GPU acceleration for efficient training
 
 ```
   # ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
