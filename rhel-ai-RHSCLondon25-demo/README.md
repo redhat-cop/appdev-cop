@@ -147,9 +147,6 @@ This command use to configure hardware vendor your system falls into and specifi
 
 
 
-
-
-
 ![QNA](Images/qna_yaml_format.png)
 
 ![Commit_Details](Images/commit_patterns_update.png)
