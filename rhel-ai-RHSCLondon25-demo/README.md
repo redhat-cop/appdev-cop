@@ -176,9 +176,14 @@ The synthetic data generated in the previous step was used to train the AI Model
 ``` 
   # ilab model train --pipeline=simple --device=cuda
 ```
+
+![Train_Model](Images/Train_Model_output.png)
+
 ##### Explanation
 * --pipeline simple: Ensures compatibility with the SDG pipeline
 * --device cuda: Uses GPU acceleration for efficient training
+
+
 
 #### Model Serving
 
