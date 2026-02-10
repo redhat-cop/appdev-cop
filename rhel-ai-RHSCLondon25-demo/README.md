@@ -164,7 +164,7 @@ Synthetic data was generated using the " ilab data generate " command based on t
   # ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
 ```
 
-### Explanation
+##### Explanation
 * --taxonomy-path: Points to the taxonomy YAML file defining domain-specific knowledge (RHEL AI Q&A)
 * --pipeline simple: Uses the simple SDG pipeline suitable for PoC and initial model development
 * --gpus 1: Enables GPU acceleration for faster synthetic data generation
