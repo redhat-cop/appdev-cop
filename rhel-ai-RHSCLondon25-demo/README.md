@@ -180,8 +180,16 @@ The synthetic data generated in the previous step was used to train the AI Model
 * --pipeline simple: Ensures compatibility with the SDG pipeline
 * --device cuda: Uses GPU acceleration for efficient training
 
+#### Model Serving
+
+After successful training, the model was deployed for inference using the InstructLab serving capability.
+
 ```
   # ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
 ```
+##### Explanation
+* --model-path: Specifies the trained model file
+* Loads the trained model into a local InstructLab inference service, enabling real-time interactive responses
 
+#### Chat and Validation
 
