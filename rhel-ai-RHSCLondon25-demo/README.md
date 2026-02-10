@@ -146,7 +146,6 @@ This command use to configure hardware vendor your system falls into and specifi
 ``` 
 
  
-
 #### Taxonomy - QNA File & Pattern update
 
 
@@ -157,9 +156,18 @@ This command use to configure hardware vendor your system falls into and specifi
 ![Commit_Details](Images/commit_patterns_update.png)
 
 
+#### Synthetic Data Generation (SDG)
+
+Synthetic data was generated using the " ilab data generate " command based on the defined taxonomy
+
 ```
   # ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
 ```
+
+### Explanation
+* --taxonomy-path: Points to the taxonomy YAML file defining domain-specific knowledge (RHEL AI Q&A)
+* --pipeline simple: Uses the simple SDG pipeline suitable for PoC and initial model development
+* --gpus 1: Enables GPU acceleration for faster synthetic data generation
 
 ``` 
   # ilab model train --pipeline=simple --device=cuda
