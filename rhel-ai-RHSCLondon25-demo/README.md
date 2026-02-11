@@ -132,39 +132,69 @@ Deployed RHEL AI VM with an NVIDIA GPU
 ```
 
 ``` 
-# ilab --version 
-ilab, version 0.26.1
+  # ilab --version 
+    ilab, version 0.26.1
 
 ```
 
 #### Initialize the config (InstructLab CLI)
 
+This command use to configure hardware vendor your system falls into and specific hardware configuration that most closely matches your system
+
 ```
-# ilab config init
+  # ilab config init
 ``` 
 
-This command use to configure hardware vendor your system falls into and specific hardware configuration that most closely matches your system 
-
-
-
-
+ 
+#### Taxonomy - QNA File & Pattern update
 
 
 ![QNA](Images/qna_yaml_format.png)
 
 ![Commit_Details](Images/commit_patterns_update.png)
 
+![Taxonomy_Diff](Images/tax_diff.png)
+
+
+#### Synthetic Data Generation (SDG)
+
+Synthetic data was generated using the " ilab data generate " command based on the defined taxonomy
 
 ```
-ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
+  # ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
 ```
+
+##### Explanation
+* --taxonomy-path: Points to the taxonomy YAML file defining domain-specific knowledge (RHEL AI Q&A)
+* --pipeline simple: Uses the simple SDG pipeline suitable for PoC and initial model development
+* --gpus 1: Enables GPU acceleration for faster synthetic data generation
+
+#### Model Training
+
+The synthetic data generated in the previous step was used to train the AI Model using the InstructLab training pipeline
 
 ``` 
-ilab model train --pipeline=simple --device=cuda
+  # ilab model train --pipeline=simple --device=cuda
 ```
 
-```
-ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
-```
+![Train_Model](Images/Train_Model_output.png)
 
+##### Explanation
+* --pipeline simple: Ensures compatibility with the SDG pipeline
+* --device cuda: Uses GPU acceleration for efficient training
+
+
+
+#### Model Serving
+
+After successful training, the model was deployed for inference using the InstructLab serving capability.
+
+```
+  # ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
+```
+##### Explanation
+* --model-path: Specifies the trained model file
+* Loads the trained model into a local InstructLab inference service, enabling real-time interactive responses
+
+#### Chat and Validation
 
