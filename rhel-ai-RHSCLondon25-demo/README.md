@@ -183,8 +183,6 @@ The synthetic data generated in the previous step was used to train the AI Model
 * --pipeline simple: Ensures compatibility with the SDG pipeline
 * --device cuda: Uses GPU acceleration for efficient training
 
-
-
 #### Model Serving
 
 After successful training, the model was deployed for inference using the InstructLab serving capability.
