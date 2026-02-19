@@ -1,4 +1,4 @@
-# RHEL AI Red Hat Summit Connet London 2025
+# RHEL AI Red Hat Summit Connect London 2025
 
 # Unlocking Your Company’s Knowledge: Building an AI Assistant with RHEL AI 
 
