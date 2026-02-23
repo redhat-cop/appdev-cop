@@ -201,6 +201,9 @@ After deployment, the model was tested using the InstructLab interactive chat co
 ```
   # ilab model chat --model /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
 ```
+
+![Chat_Model](Images/Chat_Model.png)
+
 ##### Explanation
 
 * ilab model chat → Starts interactive chat mode
