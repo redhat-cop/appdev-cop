@@ -1,4 +1,4 @@
-# RHEL AI Red Hat Summit Connet London 2025
+# RHEL AI Red Hat Summit Connect London 2025
 
 # Unlocking Your Company’s Knowledge: Building an AI Assistant with RHEL AI 
 
@@ -184,8 +184,6 @@ The synthetic data generated in the previous step was used to train the AI Model
 * --pipeline simple: Ensures compatibility with the SDG pipeline
 * --device cuda: Uses GPU acceleration for efficient training
 
-
-
 #### Model Serving
 
 After successful training, the model was deployed for inference using the InstructLab serving capability.
@@ -193,9 +191,26 @@ After successful training, the model was deployed for inference using the Instru
 ```
   # ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
 ```
+
+![Serve_Model](Images/Serve_Model.png)
+
 ##### Explanation
 * --model-path: Specifies the trained model file
 * Loads the trained model into a local InstructLab inference service, enabling real-time interactive responses
 
 #### Chat and Validation
+
+After deployment, the model was tested using the InstructLab interactive chat command.
+
+```
+  # ilab model chat --model /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
+```
+
+![Chat_Model](Images/Chat_Model.png)
+
+##### Explanation
+
+* ilab model chat → Starts interactive chat mode
+* --model → Specifies the trained model file
+* Full path is required unless you are inside the directory where the model exists
 
