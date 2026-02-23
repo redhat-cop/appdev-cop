@@ -190,6 +190,9 @@ After successful training, the model was deployed for inference using the Instru
 ```
   # ilab model serve --model-path /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
 ```
+
+![Serve_Model](Images/Serve_Model.png)
+
 ##### Explanation
 * --model-path: Specifies the trained model file
 * Loads the trained model into a local InstructLab inference service, enabling real-time interactive responses
