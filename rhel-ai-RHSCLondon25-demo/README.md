@@ -196,3 +196,14 @@ After successful training, the model was deployed for inference using the Instru
 
 #### Chat and Validation
 
+After deployment, the model was tested using the InstructLab interactive chat command.
+
+```
+  # ilab model chat --model /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
+```
+##### Explanation
+
+* ilab model chat → Starts interactive chat mode
+* --model → Specifies the trained model file
+* Full path is required unless you are inside the directory where the model exists
+
