@@ -1,10 +1,108 @@
-# Docling
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![CLI](https://img.shields.io/badge/interface-Typer-orange)
+![Vector Search](https://img.shields.io/badge/search-FAISS-purple)
 
-## Docling Project Link - https://docling-project.github.io/docling/ 
+== Docling Project( https://docling-project.github.io/docling/) 
 
 ## Docling Architecture
 
 
 
-pip install docling sentence-transformers faiss-cpu langchain-text-splitters pydantic[dotenv] typer rich
+== 📄 Document Ingestion & Semantic Search Pipeline
 
+
+Convert documents (PDF, DOCX, PPTX, XLSX, HTML, Markdown, URLs) into Markdown and perform semantic search using FAISS + Sentence Transformers.
+
+---
+
+== ✨ Features
+
+- 📄 Multi-format document ingestion
+- 🌐 URL to Markdown conversion
+- 🧠 Semantic search with embeddings
+- ⚡ Fast vector search using FAISS
+- 🖥 CLI powered by Typer
+- 🎨 Rich terminal output
+
+---
+
+== 🐍 Requirements
+
+- Python **3.9 or higher**
+- macOS / Linux / Windows
+
+Check version:
+
+```bash
+python --version
+```
+
+== 🚀 Installation
+One option is to install the package from requirements.txt:
+
+```bash
+pip install -r requirements.txt 
+```
+Or you can install the package directly using pip, doing this for all requirement packages:
+
+```bash
+pip install docling
+```
+Alternatively, you can install using toml:
+
+```bash
+pip install -e .
+```
+
+== 🧑‍💻 Usage
+
+Run the CLI to ingest a document for one file:
+
+```bash
+docling ingest --file path/to/document.pdf
+```
+
+Ingest multiple documents:
+
+```bash
+docling ingest --file path/to/doc1.pdf path/to/doc2.docx
+```
+Ingest a URL:
+```bash
+docling ingest --url https://example.com/article
+```
+Run for multiple URLs:
+```bash
+docling ingest --url https://example.com/article1 https://example.com/article2
+```
+
+For all files in a folder:
+```bash
+docling ingest --folder path/to/folder/*.pdf
+```
+
+
+Perform a semantic search:
+```bash
+docling search --query "What are the main findings of the document?"
+```
+Running crawler to ingest documents from a website:
+
+```bash
+docling crawl --url https://example.com
+```
+Or run crawl.py directly:
+
+```bash
+python crawl.py --url https://example.com
+```
+
+Crawl a website with a limit on the number of pages:
+
+```bash
+docling crawl --url https://example.com --limit 10
+```
+
+== 🧑‍🔬 Contributing
+Contributions are welcome! Please open an issue or submit a pull request.
