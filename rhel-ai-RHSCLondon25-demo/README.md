@@ -227,4 +227,9 @@ The implementation of RHEL AI transforms the complex process of machine learning
 
 Through the use of taxonomy-driven synthetic data generation, RHEL AI provides a secure and scalable way to improve model accuracy without the high cost of manual data labeling. This establishes a robust foundation for building specialized AI assistants that are private, performant, and fully supported within the Red Hat ecosystem.
 
+### Future Enhancements
+
+* OpenShift AI Integration: Scaling from a single RHEL VM to a distributed cluster for faster, multi-GPU training.
+* Pipeline Automation: Implementing CI/CD to automatically retrain the model whenever the taxonomy is updated.
+
 
