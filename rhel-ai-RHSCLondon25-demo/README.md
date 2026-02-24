@@ -120,9 +120,13 @@ Serving makes the model available on your machine as an endpoint. Once served, y
 
 Deployed RHEL AI VM with an NVIDIA GPU 
 
-* RHEL AI
+* Platform: Red Hat Enterprise Linux AI (RHEL AI)
+* Base Operating System: RHEL 9
+* Core Tooling: ilab (InstructLab CLI)
 * NVIDIA GPU
     - g6.xlarge (1x L4 with 24GB GPU memory)
+
+This environment provides a supported and enterprise-ready AI foundation fully integrated within RHEL AI.
 
 ```
  # cat /etc/os-release | grep VARIANT
@@ -146,7 +150,11 @@ This command use to configure hardware vendor your system falls into and specifi
 ``` 
 
  
-#### Taxonomy - QNA File & Pattern update
+#### Taxonomy Creation
+
+Taxonomy is the "curriculum" you teach the model. It consists of YAML files containing seed examples of the knowledge or skills you want the model to acquire.
+
+* Structure: Knowledge is added by placing a qna.yaml file and a corresponding attribution file in the taxonomy/knowledge/ directory.
 
 
 ![QNA](Images/qna_yaml_format.png)
@@ -158,7 +166,7 @@ This command use to configure hardware vendor your system falls into and specifi
 
 #### Synthetic Data Generation (SDG)
 
-Synthetic data was generated using the " ilab data generate " command based on the defined taxonomy
+Synthetic data was generated using the " ilab data generate " command based on the defined taxonomy. Instead of requiring thousands of manual entries, ilab uses a large "Teacher" model to expand your taxonomy seeds into a full dataset.
 
 ```
   # ilab data generate --taxonomy-path /root/.local/share/instructlab/taxonomy/knowledge/rhelai/qna.yaml --pipeline simple --gpus 1
@@ -166,7 +174,7 @@ Synthetic data was generated using the " ilab data generate " command based on t
 
 ##### Explanation
 * --taxonomy-path: Points to the taxonomy YAML file defining domain-specific knowledge (RHEL AI Q&A)
-* --pipeline simple: Uses the simple SDG pipeline suitable for PoC and initial model development
+* --pipeline simple: Uses the simple SDG pipeline suitable for PoC and initial model development, but full or accelerated pipelines may be available depending on the teacher model used
 * --gpus 1: Enables GPU acceleration for faster synthetic data generation
 
 #### Model Training
@@ -199,7 +207,7 @@ After successful training, the model was deployed for inference using the Instru
 
 #### Chat and Validation
 
-After deployment, the model was tested using the InstructLab interactive chat command.
+After deployment, Interactive testing to ensure the model learned the taxonomy content correctly.
 
 ```
   # ilab model chat --model /root/.local/share/instructlab/checkpoints/xxxx-model-f16.gguf
@@ -212,4 +220,11 @@ After deployment, the model was tested using the InstructLab interactive chat co
 * ilab model chat → Starts interactive chat mode
 * --model → Specifies the trained model file
 * Full path is required unless you are inside the directory where the model exists
+
+### Conclusion
+
+The implementation of RHEL AI transforms the complex process of machine learning into a manageable, reproducible, and enterprise-ready workflow. By utilizing the InstructLab methodology, this setup allows organizations to move away from generic, "black-box" models and toward domain-specific AI that is tailored to their unique data and operational needs.
+
+Through the use of taxonomy-driven synthetic data generation, RHEL AI provides a secure and scalable way to improve model accuracy without the high cost of manual data labeling. This establishes a robust foundation for building specialized AI assistants that are private, performant, and fully supported within the Red Hat ecosystem.
+
 
