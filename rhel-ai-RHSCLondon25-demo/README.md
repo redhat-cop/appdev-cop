@@ -5,7 +5,7 @@
 # By Maha & Paulo - RHEL AI
 
 ```
-Author: 
+Author(s): 
 Mahalakshmi Vijayakumar / RedHat
 Paulo Menon / RedHat
 
@@ -241,3 +241,5 @@ Through the use of taxonomy-driven synthetic data generation, RHEL AI provides a
 * OpenShift AI Integration: Scaling from a single RHEL VM to a distributed cluster for faster, multi-GPU training
 * Pipeline Automation: Implementing CI/CD to automatically retrain the model whenever the taxonomy is updated
 * RAG Integration: Supplementing the fine-tuned model with Retrieval Augmented Generation (RAG) for real-time data access
+
+---
