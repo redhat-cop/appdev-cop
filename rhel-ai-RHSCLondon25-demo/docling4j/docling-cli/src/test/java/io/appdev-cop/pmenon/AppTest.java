@@ -1,4 +1,4 @@
-package io.appdev-cop.pmenon;
+package io.appdevcop.pmenon;
 
 import junit.framework.Test;
 import junit.framework.TestCase;

@@ -1,0 +1,39 @@
+# Java cli Docling4J
+
+## Pre requirements
+
+Download Docling4J jar tag version 0.1.1from the releases page:
+
+
+Maunally Install docling4j in your local maven repository:
+
+```bash
+mvn install:install-file \
+  -Dfile=target/docling4j-0.1.1.jar \
+  -DgroupId=io.github.docling \
+  -DartifactId=docling4j \
+  -Dversion=0.1.1 \
+  -Dpackaging=jar \
+  -DgeneratePom=true
+```
+## Compile
+
+```bash
+mvn clean package
+```
+
+## Run CLI
+
+
+Example
+
+```bash
+java -jar target/docling-cli-1.0-SNAPSHOT-jar-with-dependencies.jar \
+  -o artifacts Red_Hat_Enterprise_Linux_AI_Getting_Started.pdf
+```
+
+
+```bash
+java -jar target/docling-cli-1.0-SNAPSHOT-jar-with-dependencies.jar \
+  -o artifacts sample.md sample.html sample.pdf
+```

@@ -1,4 +1,4 @@
-package io.appdev-cop.pmenon;
+package io.appdevcop.pamenon;
 
 /**
  * Hello world!
