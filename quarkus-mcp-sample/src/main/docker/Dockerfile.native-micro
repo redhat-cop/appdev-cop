@@ -10,11 +10,11 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native-micro -t quarkus/mcp-sample .
+# docker build -f src/main/docker/Dockerfile.native-micro -t quarkus/quarkus-mcp-sample .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/mcp-sample
+# docker run -i --rm -p 8080:8080 quarkus/quarkus-mcp-sample
 #
 ###
 FROM quay.io/quarkus/quarkus-micro-image:2.0
