@@ -10,5 +10,5 @@
         template:
           metadata:
             annotations:
-              identity.platform/restartedAt: "{{ ansible_date_time.iso8601 }}"
+              cop_custom.keycloak_ops/restartedAt: "{{ ansible_date_time.iso8601 }}"
   listen: restart keycloak

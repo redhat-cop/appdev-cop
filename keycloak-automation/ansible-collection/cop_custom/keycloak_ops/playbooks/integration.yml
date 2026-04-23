@@ -1,6 +1,6 @@
 ---
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║  identity.platform — Integration Only                           ║
+# ║  cop_custom.keycloak_ops — Integration Only                           ║
 # ║                                                                 ║
 # ║  Assumes Keycloak is already running on OpenShift.              ║
 # ║  Discovers the route, creates an OAuth client in Keycloak,      ║
@@ -24,13 +24,13 @@
   tasks:
     - name: Set up authentication
       ansible.builtin.include_role:
-        name: identity.platform.auth
+        name: cop_custom.keycloak_ops.auth
       vars:
         auth_setup_keycloak: false
 
     - name: Run integration
       ansible.builtin.include_role:
-        name: identity.platform.integration
+        name: cop_custom.keycloak_ops.integration
       vars:
         integration_keycloak_namespace: "{{ identity_platform.openshift.namespace }}"
         integration_keycloak_admin_user: "{{ identity_platform.keycloak.admin_user }}"

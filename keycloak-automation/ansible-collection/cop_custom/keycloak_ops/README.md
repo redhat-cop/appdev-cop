@@ -1,13 +1,13 @@
-# Ansible Collection: identity.platform
+# Ansible Collection: cop_custom.keycloak_ops
 
-Enterprise identity-platform orchestration layer. Deploys Red Hat Build of Keycloak on OpenShift (or bare-metal), configures realms / clients / users through `redhat.rhbk`, and wires OpenShift OAuth to trust Keycloak as an OIDC identity provider — all driven by a single variable structure.
+Enterprise cop_custom-keycloak_ops orchestration layer. Deploys Red Hat Build of Keycloak on OpenShift (or bare-metal), configures realms / clients / users through `redhat.rhbk`, and wires OpenShift OAuth to trust Keycloak as an OIDC identity provider — all driven by a single variable structure.
 
 ---
 
 ## Directory Tree
 
 ```
-identity/platform/
+cop_custom/keycloak_ops/
 ├── galaxy.yml
 ├── README.md
 ├── inventory/
@@ -124,7 +124,7 @@ identity/platform/
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    identity.platform                         │
+│                    cop_custom.keycloak_ops                         │
 │                                                              │
 │  ┌──────────┐                                                │
 │  │   auth   │  ← validates credentials for both systems      │
@@ -210,7 +210,7 @@ ansible-galaxy collection install redhat.rhbk
 ```bash
 cd identity/platform
 ansible-galaxy collection build
-ansible-galaxy collection install identity-platform-1.0.0.tar.gz
+ansible-galaxy collection install cop_custom-keycloak_ops-1.0.0.tar.gz
 ```
 
 ---
@@ -220,27 +220,27 @@ ansible-galaxy collection install identity-platform-1.0.0.tar.gz
 ### Deploy everything (OpenShift + Keycloak + OAuth integration)
 
 ```bash
-ansible-playbook identity/platform/playbooks/full-platform.yml \
+ansible-playbook cop_custom/keycloak_ops/playbooks/full-platform.yml \
   -e '{"identity_platform": {"keycloak": {"admin_password": "supersecret"}, "openshift": {"namespace": "my-keycloak"}}}'
 ```
 
 ### Deploy OpenShift infrastructure only
 
 ```bash
-ansible-playbook identity/platform/playbooks/openshift-only.yml
+ansible-playbook cop_custom/keycloak_ops/playbooks/openshift-only.yml
 ```
 
 ### Configure Keycloak only (already running)
 
 ```bash
-ansible-playbook identity/platform/playbooks/keycloak-only.yml \
+ansible-playbook cop_custom/keycloak_ops/playbooks/keycloak-only.yml \
   -e '{"identity_platform": {"keycloak": {"url": "https://keycloak.apps.mycluster.com"}}}'
 ```
 
 ### Wire OpenShift OAuth to existing Keycloak
 
 ```bash
-ansible-playbook identity/platform/playbooks/integration.yml
+ansible-playbook cop_custom/keycloak_ops/playbooks/integration.yml
 ```
 
 ---

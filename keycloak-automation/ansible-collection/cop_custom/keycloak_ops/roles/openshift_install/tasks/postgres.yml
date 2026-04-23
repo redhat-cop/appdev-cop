@@ -10,7 +10,7 @@
         namespace: "{{ openshift_install_namespace }}"
         labels:
           app.kubernetes.io/component: database
-          app.kubernetes.io/part-of: identity-platform
+          app.kubernetes.io/part-of: keycloak-ops
       spec:
         accessModes: [ReadWriteOnce]
         resources:
@@ -47,7 +47,7 @@
         labels:
           app: "{{ openshift_install_db_host }}"
           app.kubernetes.io/component: database
-          app.kubernetes.io/part-of: identity-platform
+          app.kubernetes.io/part-of: keycloak-ops
       spec:
         replicas: 1
         selector:

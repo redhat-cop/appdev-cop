@@ -2,7 +2,7 @@
 
 This folder contains Ansible collections for identity platform automation.
 
-## identity.platform
+## cop_custom.keycloak_ops
 
 Enterprise orchestration layer that deploys Keycloak on OpenShift (or bare-metal), configures realms / clients / users through `redhat.rhbk`, and integrates OpenShift OAuth with Keycloak as an OIDC identity provider.
 
@@ -18,4 +18,4 @@ Enterprise orchestration layer that deploys Keycloak on OpenShift (or bare-metal
 | `keycloak_users` | User creation + role assignment |
 | `integration` | Discovers Keycloak route, wires OpenShift OAuth/OIDC trust |
 
-See the full documentation: [identity/platform/README.md](identity/platform/README.md)
+See the full documentation: [cop_custom/keycloak_ops/README.md](cop_custom/keycloak_ops/README.md)

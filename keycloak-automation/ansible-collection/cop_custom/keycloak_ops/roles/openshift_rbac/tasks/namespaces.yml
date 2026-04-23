@@ -7,7 +7,7 @@
       kind: Namespace
       metadata:
         name: "{{ item.name }}"
-        labels: "{{ item.labels | default({}) | combine({'app.kubernetes.io/managed-by': 'identity-platform'}) }}"
+        labels: "{{ item.labels | default({}) | combine({'app.kubernetes.io/managed-by': 'keycloak-ops'}) }}"
         annotations:
           openshift.io/display-name: "{{ item.display_name | default(item.name) }}"
   loop: "{{ openshift_rbac_namespaces }}"
