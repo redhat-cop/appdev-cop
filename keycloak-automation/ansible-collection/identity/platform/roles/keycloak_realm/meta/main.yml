@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: keycloak_realm
+  author: AppDev CoP
+  description: Manage Keycloak realms using redhat.rhbk
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  galaxy_tags: [keycloak, realm, rhbk]
+dependencies: []

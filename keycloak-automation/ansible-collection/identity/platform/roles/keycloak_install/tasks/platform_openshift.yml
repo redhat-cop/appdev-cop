@@ -1,0 +1,18 @@
+---
+# Delegates to the openshift_install role, passing through shared variables.
+- name: Deploy Keycloak on OpenShift
+  ansible.builtin.include_role:
+    name: identity.platform.openshift_install
+  vars:
+    openshift_install_namespace: "{{ keycloak_install_namespace }}"
+    openshift_install_app_name: "{{ keycloak_install_app_name }}"
+    openshift_install_image: "{{ keycloak_install_image }}"
+    openshift_install_replicas: "{{ keycloak_install_replicas }}"
+    openshift_install_admin_user: "{{ keycloak_install_admin_user }}"
+    openshift_install_admin_password: "{{ keycloak_install_admin_password }}"
+    openshift_install_deploy_postgres: "{{ keycloak_install_deploy_postgres }}"
+    openshift_install_db_host: "{{ keycloak_install_db_host }}"
+    openshift_install_db_port: "{{ keycloak_install_db_port }}"
+    openshift_install_db_name: "{{ keycloak_install_db_name }}"
+    openshift_install_db_user: "{{ keycloak_install_db_user }}"
+    openshift_install_db_password: "{{ keycloak_install_db_password }}"

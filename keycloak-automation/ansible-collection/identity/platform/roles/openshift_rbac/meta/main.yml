@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  role_name: openshift_rbac
+  author: AppDev CoP
+  description: Manage OpenShift namespaces, service accounts, and RBAC bindings
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  galaxy_tags: [openshift, rbac, namespace, serviceaccount]
+dependencies:
+  - kubernetes.core

@@ -1,0 +1,24 @@
+---
+- name: Create Keycloak Service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: "{{ openshift_install_app_name }}"
+        namespace: "{{ openshift_install_namespace }}"
+        labels:
+          app: "{{ openshift_install_app_name }}"
+          app.kubernetes.io/component: keycloak
+          app.kubernetes.io/part-of: identity-platform
+      spec:
+        selector:
+          app: "{{ openshift_install_app_name }}"
+        ports:
+          - name: http
+            port: 8080
+            targetPort: 8080
+          - name: https
+            port: 8443
+            targetPort: 8443

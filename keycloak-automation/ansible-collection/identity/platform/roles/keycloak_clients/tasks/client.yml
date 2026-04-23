@@ -1,0 +1,38 @@
+---
+- name: "Create/update client: {{ _client.realm }}/{{ _client.client_id }}"
+  redhat.rhbk.rhbk_client:
+    auth_keycloak_url: "{{ keycloak_clients_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_clients_admin_user }}"
+    auth_password: "{{ keycloak_clients_admin_password }}"
+    realm: "{{ _client.realm }}"
+    client_id: "{{ _client.client_id }}"
+    name: "{{ _client.name | default(_client.client_id) }}"
+    enabled: "{{ _client.enabled | default(true) }}"
+    public_client: "{{ _client.public_client | default(true) }}"
+    standard_flow_enabled: "{{ _client.standard_flow_enabled | default(true) }}"
+    direct_access_grants_enabled: "{{ _client.direct_access_grants_enabled | default(false) }}"
+    service_accounts_enabled: "{{ _client.service_accounts_enabled | default(false) }}"
+    client_authenticator_type: "{{ _client.client_authenticator_type | default(omit) }}"
+    secret: "{{ _client.secret | default(omit, true) }}"
+    redirect_uris: "{{ _client.redirect_uris | default(['*']) }}"
+    web_origins: "{{ _client.web_origins | default(['*']) }}"
+    state: present
+  no_log: "{{ keycloak_clients_no_log }}"
+
+- name: Create client roles
+  redhat.rhbk.rhbk_role:
+    auth_keycloak_url: "{{ keycloak_clients_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_clients_admin_user }}"
+    auth_password: "{{ keycloak_clients_admin_password }}"
+    realm: "{{ _client.realm }}"
+    client_id: "{{ _client.client_id }}"
+    name: "{{ _role.name }}"
+    description: "{{ _role.description | default('') }}"
+    state: present
+  loop: "{{ _client.roles | default([]) }}"
+  loop_control:
+    loop_var: _role
+    label: "{{ _client.client_id }}/{{ _role.name }}"
+  no_log: "{{ keycloak_clients_no_log }}"

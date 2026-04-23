@@ -1,0 +1,122 @@
+---
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  identity.platform — Full Platform Deployment                   ║
+# ║                                                                 ║
+# ║  Deploys Keycloak on OpenShift, configures realms / clients /   ║
+# ║  users, and wires OpenShift OAuth to trust Keycloak.            ║
+# ╚══════════════════════════════════════════════════════════════════╝
+- name: Deploy full identity platform
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # ── Platform selector ──
+    keycloak_platform: openshift
+
+    # ── Variable structure (override in group_vars or -e) ──
+    identity_platform:
+      keycloak:
+        admin_user: admin
+        admin_password: changeme
+        realm:
+          name: AppRealm
+          display_name: Application Realm
+          enabled: true
+          registration_allowed: false
+          password_policy: "length(8) and digits(1) and upperCase(1)"
+        clients:
+          - client_id: frontend-spa
+            name: Frontend SPA
+            realm: AppRealm
+            public_client: true
+            redirect_uris:
+              - "https://app.example.com/*"
+            web_origins:
+              - "https://app.example.com"
+            roles:
+              - name: app-admin
+              - name: app-user
+          - client_id: backend-api
+            name: Backend API
+            realm: AppRealm
+            public_client: false
+            service_accounts_enabled: true
+        users:
+          - realm: AppRealm
+            username: platform-admin
+            first_name: Platform
+            last_name: Admin
+            email: admin@example.com
+            password: changeme
+            temporary_password: true
+            client_roles:
+              - client_id: frontend-spa
+                roles: [app-admin]
+      openshift:
+        namespace: keycloak
+        teams:
+          - name: team-alpha
+            display_name: Team Alpha
+        apps: []
+
+  tasks:
+    # ── 1. Establish auth context ──
+    - name: Set up authentication
+      ansible.builtin.include_role:
+        name: identity.platform.auth
+      vars:
+        auth_keycloak_url: ""
+        auth_setup_keycloak: false
+
+    # ── 2. OpenShift RBAC (namespaces, service accounts) ──
+    - name: Provision OpenShift RBAC
+      ansible.builtin.include_role:
+        name: identity.platform.openshift_rbac
+      vars:
+        openshift_rbac_namespaces:
+          - name: "{{ identity_platform.openshift.namespace }}"
+            display_name: Identity Platform
+
+    # ── 3. Install Keycloak ──
+    - name: Install Keycloak
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_install
+      vars:
+        keycloak_install_namespace: "{{ identity_platform.openshift.namespace }}"
+
+    # ── 4. Discover route and build integration ──
+    - name: Integrate OpenShift and Keycloak
+      ansible.builtin.include_role:
+        name: identity.platform.integration
+      vars:
+        integration_keycloak_namespace: "{{ identity_platform.openshift.namespace }}"
+        integration_keycloak_admin_password: "{{ identity_platform.keycloak.admin_password }}"
+        integration_oauth_client_secret: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
+
+    # ── 5. Configure Keycloak globally ──
+    - name: Configure Keycloak
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_configure
+
+    # ── 6. Create realms ──
+    - name: Create realm
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_realm
+      vars:
+        keycloak_realms:
+          - "{{ identity_platform.keycloak.realm }}"
+
+    # ── 7. Create clients ──
+    - name: Create clients
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_clients
+      vars:
+        keycloak_clients: "{{ identity_platform.keycloak.clients }}"
+
+    # ── 8. Create users ──
+    - name: Create users
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_users
+      vars:
+        keycloak_users: "{{ identity_platform.keycloak.users }}"

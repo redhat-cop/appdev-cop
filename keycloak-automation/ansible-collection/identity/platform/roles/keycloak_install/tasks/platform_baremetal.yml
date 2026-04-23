@@ -1,0 +1,121 @@
+---
+# Bare-metal / VM installation path.
+# Installs Java, PostgreSQL, downloads Keycloak, creates a systemd service.
+
+- name: Install Java runtime
+  ansible.builtin.dnf:
+    name: "{{ keycloak_install_java_package }}"
+    state: present
+
+- name: Install and initialise PostgreSQL
+  when: keycloak_install_deploy_postgres
+  block:
+    - name: Install PostgreSQL server
+      ansible.builtin.dnf:
+        name: postgresql-server
+        state: present
+
+    - name: Initialise PostgreSQL
+      ansible.builtin.command: postgresql-setup --initdb
+      args:
+        creates: /var/lib/pgsql/data/PG_VERSION
+
+    - name: Start PostgreSQL
+      ansible.builtin.systemd:
+        name: postgresql
+        enabled: true
+        state: started
+
+    - name: Install psycopg2
+      ansible.builtin.dnf:
+        name: python3-psycopg2
+        state: present
+
+    - name: Create database user
+      become: true
+      become_user: postgres
+      community.general.postgresql_user:
+        name: "{{ keycloak_install_db_user }}"
+        password: "{{ keycloak_install_db_password }}"
+
+    - name: Create database
+      become: true
+      become_user: postgres
+      community.general.postgresql_db:
+        name: "{{ keycloak_install_db_name }}"
+        owner: "{{ keycloak_install_db_user }}"
+
+- name: Create keycloak system user
+  ansible.builtin.user:
+    name: keycloak
+    system: true
+    shell: /sbin/nologin
+    home: "{{ keycloak_install_dir }}"
+    create_home: false
+
+- name: Create install directory
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}"
+    state: directory
+    owner: keycloak
+    group: keycloak
+    mode: "0755"
+
+- name: Download Keycloak
+  ansible.builtin.get_url:
+    url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_install_version }}/keycloak-{{ keycloak_install_version }}.tar.gz"
+    dest: "/tmp/keycloak-{{ keycloak_install_version }}.tar.gz"
+    mode: "0644"
+
+- name: Extract Keycloak
+  ansible.builtin.unarchive:
+    src: "/tmp/keycloak-{{ keycloak_install_version }}.tar.gz"
+    dest: "{{ keycloak_install_dir }}"
+    remote_src: true
+    owner: keycloak
+    group: keycloak
+    creates: "{{ keycloak_install_dir }}/keycloak-{{ keycloak_install_version }}/bin/kc.sh"
+
+- name: Deploy keycloak.conf
+  ansible.builtin.template:
+    src: keycloak.conf.j2
+    dest: "{{ keycloak_install_dir }}/keycloak-{{ keycloak_install_version }}/conf/keycloak.conf"
+    owner: keycloak
+    group: keycloak
+    mode: "0640"
+
+- name: Build Keycloak (optimised mode)
+  ansible.builtin.command:
+    cmd: "{{ keycloak_install_dir }}/keycloak-{{ keycloak_install_version }}/bin/kc.sh build"
+  become: true
+  become_user: keycloak
+  environment:
+    KEYCLOAK_ADMIN: "{{ keycloak_install_admin_user }}"
+    KEYCLOAK_ADMIN_PASSWORD: "{{ keycloak_install_admin_password }}"
+  changed_when: true
+
+- name: Deploy systemd unit
+  ansible.builtin.template:
+    src: keycloak.service.j2
+    dest: /etc/systemd/system/keycloak.service
+    mode: "0644"
+
+- name: Start Keycloak service
+  ansible.builtin.systemd:
+    name: keycloak
+    daemon_reload: true
+    enabled: true
+    state: started
+
+- name: Wait for Keycloak health endpoint
+  ansible.builtin.uri:
+    url: "http://localhost:{{ keycloak_install_http_port }}/health/ready"
+    status_code: 200
+  register: _health
+  until: _health.status == 200
+  retries: 30
+  delay: 10
+
+- name: Publish Keycloak URL
+  ansible.builtin.set_fact:
+    keycloak_route_url: "http://localhost:{{ keycloak_install_http_port }}"

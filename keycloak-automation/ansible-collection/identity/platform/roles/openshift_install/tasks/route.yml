@@ -1,0 +1,40 @@
+---
+- name: Create Keycloak Route
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: "{{ openshift_install_app_name }}"
+        namespace: "{{ openshift_install_namespace }}"
+        labels:
+          app: "{{ openshift_install_app_name }}"
+          app.kubernetes.io/component: keycloak
+          app.kubernetes.io/part-of: identity-platform
+        annotations:
+          haproxy.router.openshift.io/timeout: 60s
+      spec:
+        host: "{{ openshift_install_hostname | default(omit, true) }}"
+        to:
+          kind: Service
+          name: "{{ openshift_install_app_name }}"
+          weight: 100
+        port:
+          targetPort: http
+        tls:
+          termination: "{{ openshift_install_tls_termination }}"
+          insecureEdgeTerminationPolicy: Redirect
+
+- name: Retrieve Keycloak Route
+  kubernetes.core.k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    name: "{{ openshift_install_app_name }}"
+    namespace: "{{ openshift_install_namespace }}"
+  register: _kc_route
+
+- name: Publish Keycloak URL as fact
+  ansible.builtin.set_fact:
+    keycloak_route_url: "https://{{ _kc_route.resources[0].spec.host }}"
+  when: _kc_route.resources | length > 0

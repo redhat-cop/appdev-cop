@@ -1,0 +1,32 @@
+---
+- name: Ensure target namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: project.openshift.io/v1
+      kind: Project
+      metadata:
+        name: "{{ openshift_install_namespace }}"
+        labels:
+          app.kubernetes.io/part-of: identity-platform
+          app.kubernetes.io/managed-by: ansible
+
+- name: Deploy PostgreSQL
+  when: openshift_install_deploy_postgres
+  ansible.builtin.include_tasks: postgres.yml
+
+- name: Create Keycloak secrets
+  ansible.builtin.include_tasks: secrets.yml
+
+- name: Deploy Keycloak
+  ansible.builtin.include_tasks: deployment.yml
+
+- name: Create Keycloak Service
+  ansible.builtin.include_tasks: service.yml
+
+- name: Create Keycloak Route
+  when: openshift_install_create_route
+  ansible.builtin.include_tasks: route.yml
+
+- name: Wait for Keycloak readiness
+  ansible.builtin.include_tasks: wait.yml

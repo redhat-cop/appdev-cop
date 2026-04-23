@@ -1,0 +1,20 @@
+---
+- name: "Create RoleBinding: {{ item.namespace }}/{{ item.name }}"
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: "{{ item.name }}"
+        namespace: "{{ item.namespace }}"
+        labels:
+          app.kubernetes.io/managed-by: identity-platform
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: "{{ item.role }}"
+      subjects: "{{ item.subjects }}"
+  loop: "{{ openshift_rbac_rolebindings }}"
+  loop_control:
+    label: "{{ item.namespace }}/{{ item.name }}"

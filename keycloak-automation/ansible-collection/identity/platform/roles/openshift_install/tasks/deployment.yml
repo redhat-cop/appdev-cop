@@ -1,0 +1,81 @@
+---
+- name: Build Keycloak environment list
+  ansible.builtin.set_fact:
+    _kc_env:
+      - name: KC_HEALTH_ENABLED
+        value: "{{ openshift_install_health_enabled | string | lower }}"
+      - name: KC_METRICS_ENABLED
+        value: "{{ openshift_install_metrics_enabled | string | lower }}"
+      - name: KC_PROXY_HEADERS
+        value: "{{ openshift_install_proxy_headers }}"
+      - name: KC_HOSTNAME
+        value: "{{ openshift_install_hostname }}"
+      - name: KC_HOSTNAME_STRICT
+        value: "{{ 'true' if openshift_install_hostname | length > 0 else 'false' }}"
+
+- name: Append extra environment variables
+  ansible.builtin.set_fact:
+    _kc_env: "{{ _kc_env + [{'name': item.key, 'value': item.value | string}] }}"
+  loop: "{{ openshift_install_extra_env | dict2items }}"
+  when: openshift_install_extra_env | length > 0
+
+- name: Deploy Keycloak
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ openshift_install_app_name }}"
+        namespace: "{{ openshift_install_namespace }}"
+        labels:
+          app: "{{ openshift_install_app_name }}"
+          app.kubernetes.io/component: keycloak
+          app.kubernetes.io/part-of: identity-platform
+      spec:
+        replicas: "{{ openshift_install_replicas }}"
+        selector:
+          matchLabels:
+            app: "{{ openshift_install_app_name }}"
+        template:
+          metadata:
+            labels:
+              app: "{{ openshift_install_app_name }}"
+              app.kubernetes.io/component: keycloak
+          spec:
+            containers:
+              - name: keycloak
+                image: "{{ openshift_install_image }}"
+                args: ["start"]
+                ports:
+                  - name: http
+                    containerPort: 8080
+                  - name: https
+                    containerPort: 8443
+                env: "{{ _kc_env }}"
+                envFrom:
+                  - secretRef:
+                      name: "{{ openshift_install_app_name }}-admin"
+                  - secretRef:
+                      name: "{{ openshift_install_app_name }}-db"
+                readinessProbe:
+                  httpGet:
+                    path: /health/ready
+                    port: http
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  failureThreshold: 6
+                livenessProbe:
+                  httpGet:
+                    path: /health/live
+                    port: http
+                  initialDelaySeconds: 60
+                  periodSeconds: 15
+                startupProbe:
+                  httpGet:
+                    path: /health/started
+                    port: http
+                  initialDelaySeconds: 15
+                  periodSeconds: 5
+                  failureThreshold: 30
+                resources: "{{ openshift_install_resources }}"

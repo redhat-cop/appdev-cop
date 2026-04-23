@@ -1,0 +1,24 @@
+---
+# ── Connection (auto-populated by auth/integration roles) ──
+keycloak_configure_url: "{{ keycloak_route_url | default(identity_auth.keycloak.url | default('http://localhost:8080')) }}"
+keycloak_configure_admin_user: "{{ identity_auth.keycloak.admin_user | default('admin') }}"
+keycloak_configure_admin_password: "{{ identity_auth.keycloak.admin_password | default('changeme') }}"
+keycloak_configure_admin_realm: master
+keycloak_configure_context: ""
+keycloak_configure_no_log: false
+
+# ── Global settings ──
+keycloak_configure_login_theme: ""
+keycloak_configure_admin_theme: ""
+keycloak_configure_smtp: {}
+#   host: smtp.example.com
+#   port: 587
+#   from: keycloak@example.com
+#   fromDisplayName: Identity Platform
+#   auth: true
+#   user: smtp-user
+#   password: smtp-password
+#   starttls: true
+
+keycloak_configure_events_enabled: false
+keycloak_configure_events_expiration: 86400

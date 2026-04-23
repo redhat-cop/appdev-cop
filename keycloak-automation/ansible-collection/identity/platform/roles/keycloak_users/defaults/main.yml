@@ -1,0 +1,23 @@
+---
+# ── Connection ──
+keycloak_users_url: "{{ keycloak_route_url | default(identity_auth.keycloak.url | default('http://localhost:8080')) }}"
+keycloak_users_admin_user: "{{ identity_auth.keycloak.admin_user | default('admin') }}"
+keycloak_users_admin_password: "{{ identity_auth.keycloak.admin_password | default('changeme') }}"
+keycloak_users_no_log: false
+
+# ── Users to manage ──
+keycloak_users: []
+#   - realm: AppRealm
+#     username: jdoe
+#     first_name: Jane
+#     last_name: Doe
+#     email: jane.doe@example.com
+#     email_verified: true
+#     enabled: true
+#     password: changeme
+#     temporary_password: true
+#     client_roles:
+#       - client_id: frontend-spa
+#         roles: [app-admin]
+#     realm_roles:
+#       - uma_authorization

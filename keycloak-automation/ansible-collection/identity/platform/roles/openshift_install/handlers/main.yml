@@ -1,0 +1,14 @@
+---
+- name: Rollout restart Keycloak
+  kubernetes.core.k8s:
+    state: patched
+    kind: Deployment
+    name: "{{ openshift_install_app_name }}"
+    namespace: "{{ openshift_install_namespace }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              identity.platform/restartedAt: "{{ ansible_date_time.iso8601 }}"
+  listen: restart keycloak

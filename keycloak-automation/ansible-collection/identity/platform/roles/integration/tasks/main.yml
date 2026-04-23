@@ -1,0 +1,26 @@
+---
+- name: Discover Keycloak URL from OpenShift Route
+  ansible.builtin.include_tasks: discover_keycloak.yml
+
+- name: Discover OpenShift cluster domain
+  ansible.builtin.include_tasks: discover_cluster.yml
+
+- name: Create Keycloak client for OpenShift OAuth
+  when: integration_setup_oauth
+  ansible.builtin.include_tasks: create_oauth_client.yml
+
+- name: Configure OpenShift OAuth identity provider
+  when: integration_setup_oauth
+  ansible.builtin.include_tasks: configure_oauth.yml
+
+- name: Display integration summary
+  ansible.builtin.debug:
+    msg: |
+      ══════════════════════════════════════════
+       Identity Platform Integration Complete
+      ══════════════════════════════════════════
+       Keycloak URL : {{ _keycloak_url }}
+       OAuth client : {{ integration_oauth_client_id }}
+       OAuth realm  : {{ integration_oauth_realm }}
+       IDP name     : {{ integration_oauth_idp_name }}
+      ══════════════════════════════════════════

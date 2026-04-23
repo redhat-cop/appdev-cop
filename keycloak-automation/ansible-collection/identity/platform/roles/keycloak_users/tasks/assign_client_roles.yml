@@ -1,0 +1,48 @@
+---
+- name: "Look up client: {{ _client_role_mapping.client_id }}"
+  ansible.builtin.uri:
+    url: "{{ keycloak_users_url }}/admin/realms/{{ _user.realm }}/clients?clientId={{ _client_role_mapping.client_id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _token.json.access_token }}"
+    validate_certs: false
+    status_code: 200
+  register: _client_lookup
+
+- name: Set client internal ID
+  ansible.builtin.set_fact:
+    _client_internal_id: "{{ _client_lookup.json[0].id }}"
+  when: _client_lookup.json | length > 0
+
+- name: "Look up available roles for client: {{ _client_role_mapping.client_id }}"
+  ansible.builtin.uri:
+    url: "{{ keycloak_users_url }}/admin/realms/{{ _user.realm }}/users/{{ _user_id }}/role-mappings/clients/{{ _client_internal_id }}/available"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _token.json.access_token }}"
+    validate_certs: false
+    status_code: 200
+  register: _available_roles
+  when: _client_internal_id is defined
+
+- name: Build role payload
+  ansible.builtin.set_fact:
+    _roles_to_assign: "{{ _available_roles.json | selectattr('name', 'in', _client_role_mapping.roles) | list }}"
+  when: _available_roles.json is defined
+
+- name: "Assign roles to {{ _user.username }}"
+  ansible.builtin.uri:
+    url: "{{ keycloak_users_url }}/admin/realms/{{ _user.realm }}/users/{{ _user_id }}/role-mappings/clients/{{ _client_internal_id }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ _token.json.access_token }}"
+      Content-Type: application/json
+    body_format: json
+    body: "{{ _roles_to_assign }}"
+    validate_certs: false
+    status_code:
+      - 200
+      - 204
+  when:
+    - _roles_to_assign is defined
+    - _roles_to_assign | length > 0
