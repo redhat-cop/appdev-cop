@@ -1,0 +1,44 @@
+---
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  identity.platform — OpenShift Only                             ║
+# ║                                                                 ║
+# ║  Deploys Keycloak infrastructure on OpenShift without           ║
+# ║  configuring realms, clients, or users.                         ║
+# ╚══════════════════════════════════════════════════════════════════╝
+- name: Deploy Keycloak infrastructure on OpenShift
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    keycloak_platform: openshift
+
+    identity_platform:
+      openshift:
+        namespace: keycloak
+      keycloak:
+        admin_user: admin
+        admin_password: changeme
+
+  tasks:
+    - name: Set up authentication
+      ansible.builtin.include_role:
+        name: identity.platform.auth
+      vars:
+        auth_setup_keycloak: false
+
+    - name: Provision namespace
+      ansible.builtin.include_role:
+        name: identity.platform.openshift_rbac
+      vars:
+        openshift_rbac_namespaces:
+          - name: "{{ identity_platform.openshift.namespace }}"
+            display_name: Identity Platform — Keycloak
+
+    - name: Install Keycloak on OpenShift
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_install
+      vars:
+        keycloak_install_namespace: "{{ identity_platform.openshift.namespace }}"
+        keycloak_install_admin_user: "{{ identity_platform.keycloak.admin_user }}"
+        keycloak_install_admin_password: "{{ identity_platform.keycloak.admin_password }}"

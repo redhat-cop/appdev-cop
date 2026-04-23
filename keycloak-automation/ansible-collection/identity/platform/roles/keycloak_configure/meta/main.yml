@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: keycloak_configure
+  author: AppDev CoP
+  description: Global Keycloak server configuration (themes, SMTP, events)
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  galaxy_tags: [keycloak, configure, global]
+dependencies: []

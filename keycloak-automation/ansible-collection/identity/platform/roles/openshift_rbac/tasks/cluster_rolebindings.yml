@@ -1,0 +1,19 @@
+---
+- name: "Create ClusterRoleBinding: {{ item.name }}"
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: "{{ item.name }}"
+        labels:
+          app.kubernetes.io/managed-by: identity-platform
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: "{{ item.role }}"
+      subjects: "{{ item.subjects }}"
+  loop: "{{ openshift_rbac_cluster_rolebindings }}"
+  loop_control:
+    label: "{{ item.name }}"

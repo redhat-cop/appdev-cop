@@ -1,0 +1,16 @@
+---
+# ── OpenShift authentication ──
+auth_openshift_api_url: "{{ lookup('env', 'K8S_AUTH_HOST') | default('https://api.ocp.example.com:6443', true) }}"
+auth_openshift_token: "{{ lookup('env', 'K8S_AUTH_API_KEY') | default('', true) }}"
+auth_openshift_kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
+auth_openshift_validate_certs: true
+
+# ── Keycloak authentication ──
+auth_keycloak_url: ""
+auth_keycloak_admin_user: admin
+auth_keycloak_admin_password: "{{ lookup('env', 'KEYCLOAK_ADMIN_PASSWORD') | default('changeme', true) }}"
+auth_keycloak_admin_realm: master
+
+# ── Context flags ──
+auth_setup_openshift: true
+auth_setup_keycloak: true

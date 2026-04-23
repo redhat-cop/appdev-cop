@@ -1,0 +1,80 @@
+---
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  identity.platform — Keycloak Configuration Only                ║
+# ║                                                                 ║
+# ║  Assumes Keycloak is already running. Configures realms,        ║
+# ║  clients, and users via redhat.rhbk.                            ║
+# ╚══════════════════════════════════════════════════════════════════╝
+- name: Configure Keycloak (realms, clients, users)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    identity_platform:
+      keycloak:
+        url: "https://keycloak.apps.example.com"
+        admin_user: admin
+        admin_password: changeme
+        realm:
+          name: AppRealm
+          display_name: Application Realm
+          enabled: true
+        clients:
+          - client_id: frontend-spa
+            name: Frontend SPA
+            realm: AppRealm
+            public_client: true
+            redirect_uris:
+              - "https://app.example.com/*"
+            roles:
+              - name: app-admin
+              - name: app-user
+        users:
+          - realm: AppRealm
+            username: platform-admin
+            first_name: Platform
+            last_name: Admin
+            email: admin@example.com
+            password: changeme
+            temporary_password: true
+            client_roles:
+              - client_id: frontend-spa
+                roles: [app-admin]
+
+  tasks:
+    - name: Set up authentication
+      ansible.builtin.include_role:
+        name: identity.platform.auth
+      vars:
+        auth_keycloak_url: "{{ identity_platform.keycloak.url }}"
+        auth_keycloak_admin_user: "{{ identity_platform.keycloak.admin_user }}"
+        auth_keycloak_admin_password: "{{ identity_platform.keycloak.admin_password }}"
+        auth_setup_openshift: false
+
+    - name: Set Keycloak URL fact
+      ansible.builtin.set_fact:
+        keycloak_route_url: "{{ identity_platform.keycloak.url }}"
+
+    - name: Configure Keycloak globally
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_configure
+
+    - name: Create realms
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_realm
+      vars:
+        keycloak_realms:
+          - "{{ identity_platform.keycloak.realm }}"
+
+    - name: Create clients
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_clients
+      vars:
+        keycloak_clients: "{{ identity_platform.keycloak.clients }}"
+
+    - name: Create users
+      ansible.builtin.include_role:
+        name: identity.platform.keycloak_users
+      vars:
+        keycloak_users: "{{ identity_platform.keycloak.users }}"

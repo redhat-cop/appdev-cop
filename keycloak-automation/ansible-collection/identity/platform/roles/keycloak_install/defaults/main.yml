@@ -1,0 +1,25 @@
+---
+# ── Platform selector ──
+keycloak_platform: openshift   # openshift | baremetal
+
+# ── Shared settings (forwarded to platform-specific logic) ──
+keycloak_install_namespace: keycloak
+keycloak_install_app_name: keycloak
+keycloak_install_image: registry.redhat.io/rhbk/keycloak-rhel9:latest
+keycloak_install_replicas: 1
+keycloak_install_admin_user: "{{ identity_auth.keycloak.admin_user | default('admin') }}"
+keycloak_install_admin_password: "{{ identity_auth.keycloak.admin_password | default('changeme') }}"
+
+# ── Database ──
+keycloak_install_db_host: postgres
+keycloak_install_db_port: 5432
+keycloak_install_db_name: keycloak
+keycloak_install_db_user: keycloak
+keycloak_install_db_password: keycloak
+keycloak_install_deploy_postgres: true
+
+# ── Baremetal-specific ──
+keycloak_install_version: "24.0.4"
+keycloak_install_dir: /opt/keycloak
+keycloak_install_http_port: 8080
+keycloak_install_java_package: java-21-openjdk-headless

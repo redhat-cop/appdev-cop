@@ -1,0 +1,83 @@
+---
+- name: Obtain Keycloak admin token
+  ansible.builtin.uri:
+    url: "{{ _keycloak_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      grant_type: password
+      client_id: admin-cli
+      username: "{{ integration_keycloak_admin_user }}"
+      password: "{{ integration_keycloak_admin_password }}"
+    validate_certs: false
+    status_code: 200
+  register: _kc_token
+  no_log: true
+
+- name: Check if OAuth client already exists
+  ansible.builtin.uri:
+    url: "{{ _keycloak_url }}/admin/realms/{{ integration_oauth_realm }}/clients?clientId={{ integration_oauth_client_id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _kc_token.json.access_token }}"
+    validate_certs: false
+    status_code: 200
+  register: _existing_client
+
+- name: Create OpenShift OAuth client in Keycloak
+  ansible.builtin.uri:
+    url: "{{ _keycloak_url }}/admin/realms/{{ integration_oauth_realm }}/clients"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ _kc_token.json.access_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      clientId: "{{ integration_oauth_client_id }}"
+      name: "{{ integration_oauth_display_name }}"
+      enabled: true
+      publicClient: false
+      clientAuthenticatorType: client-secret
+      secret: "{{ integration_oauth_client_secret }}"
+      standardFlowEnabled: true
+      directAccessGrantsEnabled: false
+      redirectUris:
+        - "{{ _oauth_callback_url | default(integration_openshift_oauth_callback) }}"
+      webOrigins:
+        - "{{ _cluster_api_url | default(integration_openshift_api_url) }}"
+      protocol: openid-connect
+      defaultClientScopes:
+        - openid
+        - email
+        - profile
+    validate_certs: false
+    status_code:
+      - 201
+      - 409
+  when: _existing_client.json | length == 0
+
+- name: Retrieve client secret (if auto-generated)
+  ansible.builtin.uri:
+    url: "{{ _keycloak_url }}/admin/realms/{{ integration_oauth_realm }}/clients?clientId={{ integration_oauth_client_id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _kc_token.json.access_token }}"
+    validate_certs: false
+    status_code: 200
+  register: _oauth_client_info
+
+- name: Fetch client secret
+  ansible.builtin.uri:
+    url: "{{ _keycloak_url }}/admin/realms/{{ integration_oauth_realm }}/clients/{{ _oauth_client_info.json[0].id }}/client-secret"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _kc_token.json.access_token }}"
+    validate_certs: false
+    status_code: 200
+  register: _client_secret_info
+  when: _oauth_client_info.json | length > 0
+
+- name: Store OAuth client secret
+  ansible.builtin.set_fact:
+    _oauth_client_secret: "{{ integration_oauth_client_secret if integration_oauth_client_secret | length > 0 else _client_secret_info.json.value | default('') }}"
+  no_log: true

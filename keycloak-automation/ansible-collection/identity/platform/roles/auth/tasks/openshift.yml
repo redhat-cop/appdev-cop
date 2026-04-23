@@ -1,0 +1,20 @@
+---
+- name: Test OpenShift API connectivity
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: default
+    host: "{{ auth_openshift_api_url }}"
+    api_key: "{{ auth_openshift_token | default(omit, true) }}"
+    kubeconfig: "{{ auth_openshift_kubeconfig | default(omit, true) }}"
+    validate_certs: "{{ auth_openshift_validate_certs }}"
+  register: _ocp_test
+  failed_when: false
+
+- name: Set OpenShift auth status
+  ansible.builtin.set_fact:
+    _ocp_auth_ready: "{{ _ocp_test.resources is defined and _ocp_test.resources | length > 0 }}"
+
+- name: Report OpenShift auth result
+  ansible.builtin.debug:
+    msg: "OpenShift auth: {{ 'READY' if _ocp_auth_ready else 'FAILED — check credentials or kubeconfig' }}"

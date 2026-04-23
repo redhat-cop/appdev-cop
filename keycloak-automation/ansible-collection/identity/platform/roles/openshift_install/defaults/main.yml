@@ -1,0 +1,45 @@
+---
+# ── Namespace ──
+openshift_install_namespace: keycloak
+openshift_install_app_name: keycloak
+
+# ── Keycloak image ──
+openshift_install_image: registry.redhat.io/rhbk/keycloak-rhel9:latest
+openshift_install_replicas: 1
+
+# ── Admin credentials (passed from auth role or overridden) ──
+openshift_install_admin_user: "{{ identity_auth.keycloak.admin_user | default('admin') }}"
+openshift_install_admin_password: "{{ identity_auth.keycloak.admin_password | default('changeme') }}"
+
+# ── Database ──
+openshift_install_deploy_postgres: true
+openshift_install_postgres_image: registry.redhat.io/rhel9/postgresql-15:latest
+openshift_install_db_host: postgres
+openshift_install_db_port: 5432
+openshift_install_db_name: keycloak
+openshift_install_db_user: keycloak
+openshift_install_db_password: keycloak
+openshift_install_postgres_storage: 5Gi
+openshift_install_postgres_storage_class: ""
+
+# ── Networking ──
+openshift_install_hostname: ""
+openshift_install_tls_termination: edge
+openshift_install_create_route: true
+
+# ── Resource limits ──
+openshift_install_resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# ── Keycloak runtime flags ──
+openshift_install_proxy_headers: xforwarded
+openshift_install_health_enabled: true
+openshift_install_metrics_enabled: true
+
+# ── Extra env vars injected into the Keycloak pod ──
+openshift_install_extra_env: {}

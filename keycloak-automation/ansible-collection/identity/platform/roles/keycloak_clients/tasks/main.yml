@@ -1,0 +1,7 @@
+---
+- name: Create/update clients
+  ansible.builtin.include_tasks: client.yml
+  loop: "{{ keycloak_clients }}"
+  loop_control:
+    loop_var: _client
+    label: "{{ _client.realm }}/{{ _client.client_id }}"

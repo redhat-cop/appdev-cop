@@ -1,0 +1,15 @@
+---
+- name: "Create namespace: {{ item.name }}"
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.name }}"
+        labels: "{{ item.labels | default({}) | combine({'app.kubernetes.io/managed-by': 'identity-platform'}) }}"
+        annotations:
+          openshift.io/display-name: "{{ item.display_name | default(item.name) }}"
+  loop: "{{ openshift_rbac_namespaces }}"
+  loop_control:
+    label: "{{ item.name }}"

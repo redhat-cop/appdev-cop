@@ -1,0 +1,42 @@
+---
+# Patches the OpenShift cluster OAuth configuration to trust Keycloak as an
+# OpenID Connect identity provider.  This enables "Log in with Keycloak" on
+# the OpenShift console.
+
+- name: Patch OpenShift OAuth with Keycloak OIDC identity provider
+  kubernetes.core.k8s:
+    state: patched
+    api_version: config.openshift.io/v1
+    kind: OAuth
+    name: cluster
+    definition:
+      spec:
+        identityProviders:
+          - name: "{{ integration_oauth_idp_name }}"
+            type: OpenID
+            mappingMethod: claim
+            openID:
+              clientID: "{{ integration_oauth_client_id }}"
+              clientSecret:
+                name: "{{ integration_oauth_idp_name }}-client-secret"
+              issuer: "{{ _keycloak_url }}/realms/{{ integration_oauth_realm }}"
+              claims:
+                preferredUsername:
+                  - preferred_username
+                name:
+                  - name
+                email:
+                  - email
+
+- name: Create OAuth client secret in openshift-config namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ integration_oauth_idp_name }}-client-secret"
+        namespace: openshift-config
+      type: Opaque
+      stringData:
+        clientSecret: "{{ _oauth_client_secret }}"

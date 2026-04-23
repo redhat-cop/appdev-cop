@@ -1,0 +1,37 @@
+---
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  identity.platform — Integration Only                           ║
+# ║                                                                 ║
+# ║  Assumes Keycloak is already running on OpenShift.              ║
+# ║  Discovers the route, creates an OAuth client in Keycloak,      ║
+# ║  and patches OpenShift OAuth to trust Keycloak as an IdP.       ║
+# ╚══════════════════════════════════════════════════════════════════╝
+- name: Integrate OpenShift OAuth with Keycloak
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    identity_platform:
+      openshift:
+        namespace: keycloak
+      keycloak:
+        admin_user: admin
+        admin_password: changeme
+
+    integration_oauth_client_secret: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
+
+  tasks:
+    - name: Set up authentication
+      ansible.builtin.include_role:
+        name: identity.platform.auth
+      vars:
+        auth_setup_keycloak: false
+
+    - name: Run integration
+      ansible.builtin.include_role:
+        name: identity.platform.integration
+      vars:
+        integration_keycloak_namespace: "{{ identity_platform.openshift.namespace }}"
+        integration_keycloak_admin_user: "{{ identity_platform.keycloak.admin_user }}"
+        integration_keycloak_admin_password: "{{ identity_platform.keycloak.admin_password }}"

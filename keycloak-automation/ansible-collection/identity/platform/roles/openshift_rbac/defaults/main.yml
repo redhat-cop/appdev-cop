@@ -1,0 +1,32 @@
+---
+# ── Namespace management ──
+openshift_rbac_namespaces: []
+#   - name: team-alpha
+#     display_name: "Team Alpha"
+#     labels:
+#       team: alpha
+#       env: dev
+
+# ── ServiceAccount management ──
+openshift_rbac_service_accounts: []
+#   - name: keycloak-sa
+#     namespace: keycloak
+
+# ── RoleBinding management ──
+openshift_rbac_rolebindings: []
+#   - name: team-alpha-edit
+#     namespace: team-alpha
+#     role: edit              # ClusterRole name
+#     subjects:
+#       - kind: Group
+#         name: team-alpha
+#         apiGroup: rbac.authorization.k8s.io
+
+# ── ClusterRoleBinding management ──
+openshift_rbac_cluster_rolebindings: []
+#   - name: keycloak-cluster-reader
+#     role: cluster-reader
+#     subjects:
+#       - kind: ServiceAccount
+#         name: keycloak-sa
+#         namespace: keycloak

@@ -1,0 +1,63 @@
+---
+- name: Obtain admin token
+  ansible.builtin.uri:
+    url: "{{ keycloak_users_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      grant_type: password
+      client_id: admin-cli
+      username: "{{ keycloak_users_admin_user }}"
+      password: "{{ keycloak_users_admin_password }}"
+    validate_certs: false
+    status_code: 200
+  register: _token
+  no_log: true
+
+- name: "Create user: {{ _user.realm }}/{{ _user.username }}"
+  ansible.builtin.uri:
+    url: "{{ keycloak_users_url }}/admin/realms/{{ _user.realm }}/users"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ _token.json.access_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      username: "{{ _user.username }}"
+      firstName: "{{ _user.first_name | default('') }}"
+      lastName: "{{ _user.last_name | default('') }}"
+      email: "{{ _user.email | default('') }}"
+      emailVerified: "{{ _user.email_verified | default(false) }}"
+      enabled: "{{ _user.enabled | default(true) }}"
+      credentials:
+        - type: password
+          value: "{{ _user.password | default('changeme') }}"
+          temporary: "{{ _user.temporary_password | default(true) }}"
+    validate_certs: false
+    status_code:
+      - 201
+      - 409
+  no_log: "{{ keycloak_users_no_log }}"
+
+- name: Look up created user ID
+  ansible.builtin.uri:
+    url: "{{ keycloak_users_url }}/admin/realms/{{ _user.realm }}/users?username={{ _user.username }}&exact=true"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _token.json.access_token }}"
+    validate_certs: false
+    status_code: 200
+  register: _user_lookup
+
+- name: Set user ID fact
+  ansible.builtin.set_fact:
+    _user_id: "{{ _user_lookup.json[0].id }}"
+  when: _user_lookup.json | length > 0
+
+- name: Assign client roles
+  ansible.builtin.include_tasks: assign_client_roles.yml
+  loop: "{{ _user.client_roles | default([]) }}"
+  loop_control:
+    loop_var: _client_role_mapping
+    label: "{{ _client_role_mapping.client_id }}"
+  when: _user_id is defined

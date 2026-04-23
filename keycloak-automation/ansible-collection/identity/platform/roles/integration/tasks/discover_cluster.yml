@@ -1,0 +1,21 @@
+---
+- name: Fetch OpenShift Infrastructure resource
+  kubernetes.core.k8s_info:
+    api_version: config.openshift.io/v1
+    kind: Infrastructure
+    name: cluster
+  register: _infra_info
+  failed_when: false
+
+- name: Extract cluster domain
+  ansible.builtin.set_fact:
+    _cluster_domain: "{{ _infra_info.resources[0].status.apiServerURL | regex_replace('https://api\\.', '') | regex_replace(':6443', '') }}"
+    _cluster_api_url: "{{ _infra_info.resources[0].status.apiServerURL }}"
+  when:
+    - _infra_info.resources is defined
+    - _infra_info.resources | length > 0
+
+- name: Build OAuth callback URL
+  ansible.builtin.set_fact:
+    _oauth_callback_url: "https://oauth-openshift.apps.{{ _cluster_domain }}/oauth2callback/{{ integration_oauth_idp_name }}"
+  when: _cluster_domain is defined

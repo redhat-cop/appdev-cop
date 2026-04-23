@@ -1,0 +1,118 @@
+---
+- name: Create PostgreSQL PVC
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: "{{ openshift_install_db_host }}-data"
+        namespace: "{{ openshift_install_namespace }}"
+        labels:
+          app.kubernetes.io/component: database
+          app.kubernetes.io/part-of: identity-platform
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: "{{ openshift_install_postgres_storage }}"
+        storageClassName: "{{ openshift_install_postgres_storage_class | default(omit, true) }}"
+
+- name: Create PostgreSQL Secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ openshift_install_db_host }}-credentials"
+        namespace: "{{ openshift_install_namespace }}"
+        labels:
+          app.kubernetes.io/component: database
+      type: Opaque
+      stringData:
+        POSTGRESQL_USER: "{{ openshift_install_db_user }}"
+        POSTGRESQL_PASSWORD: "{{ openshift_install_db_password }}"
+        POSTGRESQL_DATABASE: "{{ openshift_install_db_name }}"
+
+- name: Deploy PostgreSQL
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ openshift_install_db_host }}"
+        namespace: "{{ openshift_install_namespace }}"
+        labels:
+          app: "{{ openshift_install_db_host }}"
+          app.kubernetes.io/component: database
+          app.kubernetes.io/part-of: identity-platform
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "{{ openshift_install_db_host }}"
+        strategy:
+          type: Recreate
+        template:
+          metadata:
+            labels:
+              app: "{{ openshift_install_db_host }}"
+          spec:
+            containers:
+              - name: postgresql
+                image: "{{ openshift_install_postgres_image }}"
+                ports:
+                  - containerPort: 5432
+                    protocol: TCP
+                envFrom:
+                  - secretRef:
+                      name: "{{ openshift_install_db_host }}-credentials"
+                volumeMounts:
+                  - name: pgdata
+                    mountPath: /var/lib/pgsql/data
+                resources:
+                  requests:
+                    cpu: 250m
+                    memory: 256Mi
+                  limits:
+                    cpu: "1"
+                    memory: 512Mi
+                readinessProbe:
+                  tcpSocket:
+                    port: 5432
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+            volumes:
+              - name: pgdata
+                persistentVolumeClaim:
+                  claimName: "{{ openshift_install_db_host }}-data"
+
+- name: Create PostgreSQL Service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: "{{ openshift_install_db_host }}"
+        namespace: "{{ openshift_install_namespace }}"
+      spec:
+        selector:
+          app: "{{ openshift_install_db_host }}"
+        ports:
+          - port: 5432
+            targetPort: 5432
+
+- name: Wait for PostgreSQL readiness
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "{{ openshift_install_db_host }}"
+    namespace: "{{ openshift_install_namespace }}"
+  register: _pg
+  until:
+    - _pg.resources | length > 0
+    - (_pg.resources[0].status.readyReplicas | default(0)) >= 1
+  retries: 30
+  delay: 10
