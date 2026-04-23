@@ -1,12 +1,12 @@
 ---
-namespace: identity
-name: platform
+namespace: cop_custom
+name: keycloak_ops
 version: 1.0.0
 readme: README.md
 authors:
   - AppDev CoP <appdev-cop@redhat.com>
 description: >-
-  Enterprise identity-platform orchestration layer.  Deploys Red Hat Build of
+  Enterprise identity platform orchestration layer.  Deploys Red Hat Build of
   Keycloak on OpenShift (or bare-metal), configures realms / clients / users
   through redhat.rhbk, and wires OpenShift OAuth to trust Keycloak as an
   OIDC identity provider — all driven by a single variable structure.
@@ -26,7 +26,7 @@ dependencies:
   kubernetes.core: ">=2.4.0"
   redhat.rhbk: ">=1.0.0"
 repository: https://github.com/pamenon/appdev-cop
-documentation: https://github.com/pamenon/appdev-cop/tree/main/keycloak-automation/ansible-collection/identity/platform
+documentation: https://github.com/pamenon/appdev-cop/tree/main/keycloak-automation/ansible-collection/cop_custom/keycloak_ops
 homepage: https://github.com/pamenon/appdev-cop
 issues: https://github.com/pamenon/appdev-cop/issues
 build_ignore:

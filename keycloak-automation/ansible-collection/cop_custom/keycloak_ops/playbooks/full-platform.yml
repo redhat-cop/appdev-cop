@@ -1,6 +1,6 @@
 ---
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║  identity.platform — Full Platform Deployment                   ║
+# ║  cop_custom.keycloak_ops — Full Platform Deployment                   ║
 # ║                                                                 ║
 # ║  Deploys Keycloak on OpenShift, configures realms / clients /   ║
 # ║  users, and wires OpenShift OAuth to trust Keycloak.            ║
@@ -64,7 +64,7 @@
     # ── 1. Establish auth context ──
     - name: Set up authentication
       ansible.builtin.include_role:
-        name: identity.platform.auth
+        name: cop_custom.keycloak_ops.auth
       vars:
         auth_keycloak_url: ""
         auth_setup_keycloak: false
@@ -72,23 +72,23 @@
     # ── 2. OpenShift RBAC (namespaces, service accounts) ──
     - name: Provision OpenShift RBAC
       ansible.builtin.include_role:
-        name: identity.platform.openshift_rbac
+        name: cop_custom.keycloak_ops.openshift_rbac
       vars:
         openshift_rbac_namespaces:
           - name: "{{ identity_platform.openshift.namespace }}"
-            display_name: Identity Platform
+            display_name: Keycloak Ops
 
     # ── 3. Install Keycloak ──
     - name: Install Keycloak
       ansible.builtin.include_role:
-        name: identity.platform.keycloak_install
+        name: cop_custom.keycloak_ops.keycloak_install
       vars:
         keycloak_install_namespace: "{{ identity_platform.openshift.namespace }}"
 
     # ── 4. Discover route and build integration ──
     - name: Integrate OpenShift and Keycloak
       ansible.builtin.include_role:
-        name: identity.platform.integration
+        name: cop_custom.keycloak_ops.integration
       vars:
         integration_keycloak_namespace: "{{ identity_platform.openshift.namespace }}"
         integration_keycloak_admin_password: "{{ identity_platform.keycloak.admin_password }}"
@@ -97,12 +97,12 @@
     # ── 5. Configure Keycloak globally ──
     - name: Configure Keycloak
       ansible.builtin.include_role:
-        name: identity.platform.keycloak_configure
+        name: cop_custom.keycloak_ops.keycloak_configure
 
     # ── 6. Create realms ──
     - name: Create realm
       ansible.builtin.include_role:
-        name: identity.platform.keycloak_realm
+        name: cop_custom.keycloak_ops.keycloak_realm
       vars:
         keycloak_realms:
           - "{{ identity_platform.keycloak.realm }}"
@@ -110,13 +110,13 @@
     # ── 7. Create clients ──
     - name: Create clients
       ansible.builtin.include_role:
-        name: identity.platform.keycloak_clients
+        name: cop_custom.keycloak_ops.keycloak_clients
       vars:
         keycloak_clients: "{{ identity_platform.keycloak.clients }}"
 
     # ── 8. Create users ──
     - name: Create users
       ansible.builtin.include_role:
-        name: identity.platform.keycloak_users
+        name: cop_custom.keycloak_ops.keycloak_users
       vars:
         keycloak_users: "{{ identity_platform.keycloak.users }}"

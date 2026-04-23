@@ -8,7 +8,7 @@
       metadata:
         name: "{{ openshift_install_namespace }}"
         labels:
-          app.kubernetes.io/part-of: identity-platform
+          app.kubernetes.io/part-of: keycloak-ops
           app.kubernetes.io/managed-by: ansible
 
 - name: Deploy PostgreSQL

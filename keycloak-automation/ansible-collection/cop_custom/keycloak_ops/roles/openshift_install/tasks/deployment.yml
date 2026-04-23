@@ -31,7 +31,7 @@
         labels:
           app: "{{ openshift_install_app_name }}"
           app.kubernetes.io/component: keycloak
-          app.kubernetes.io/part-of: identity-platform
+          app.kubernetes.io/part-of: keycloak-ops
       spec:
         replicas: "{{ openshift_install_replicas }}"
         selector:

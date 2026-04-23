@@ -2,7 +2,7 @@
 # Delegates to the openshift_install role, passing through shared variables.
 - name: Deploy Keycloak on OpenShift
   ansible.builtin.include_role:
-    name: identity.platform.openshift_install
+    name: cop_custom.keycloak_ops.openshift_install
   vars:
     openshift_install_namespace: "{{ keycloak_install_namespace }}"
     openshift_install_app_name: "{{ keycloak_install_app_name }}"
