@@ -1,21 +1,16 @@
 # Beginner Level Examples
 
-This folder contains introductory Quarkus examples covering the fundamentals: REST endpoints, configuration, JSON handling, validation, health checks, error handling, templates, and Dev Services.
+This folder contains introductory Quarkus examples covering the fundamentals: REST endpoints, CRUD with a database, dependency injection, configuration management, and testing.
 
 ## Examples
 
 | Folder | Example | Key Concepts |
 |---|---|---|
-| `hello-world/` | Hello World REST | JAX-RS `@Path`, `@GET`, Dev Mode |
-| `config-profiles/` | Configuration & Profiles | `application.properties`, `%dev` / `%prod` profiles |
-| `json-rest-api/` | JSON REST API | Jackson serialization, `@Produces(APPLICATION_JSON)` |
-| `path-query-params/` | Path & Query Parameters | `@PathParam`, `@QueryParam`, `@DefaultValue` |
-| `request-validation/` | Request Validation | `@Valid`, Bean Validation constraints |
-| `simple-crud/` | In-Memory CRUD | `HashMap`-backed REST CRUD, HTTP methods |
-| `logging-and-health/` | Logging & Health Checks | `jboss-logging`, MicroProfile Health, liveness/readiness |
-| `error-handling/` | Error Handling | `ExceptionMapper`, RFC 7807 Problem Details |
-| `static-content/` | Static Content & Templates | `META-INF/resources`, Qute templates |
-| `dev-services-intro/` | Dev Services | Zero-config PostgreSQL via Testcontainers/Podman |
+| `hello-world/` | Hello World REST API | JAX-RS `@Path`, `@GET`, RESTEasy Reactive, Dev Mode |
+| `simple-crud/` | CRUD with Panache | `PanacheEntity`, Active Record pattern, `@Transactional`, H2 |
+| `dependency-injection/` | Dependency Injection (CDI) | `@ApplicationScoped`, `@Inject`, ArC build-time DI |
+| `config-management/` | Configuration Management | `@ConfigMapping`, `@ConfigProperty`, profiles (`%dev`, `%prod`) |
+| `testing-quarkus/` | Testing with @QuarkusTest | REST Assured, `@InjectMock`, unit vs integration tests |
 
 ## How to Run
 
@@ -31,3 +26,5 @@ Then test with:
 ```bash
 curl http://localhost:8080/hello
 ```
+
+> **Note:** If the Maven wrapper (`mvnw`) is not present, generate it with `mvn -N wrapper:wrapper` or use `mvn` directly.
