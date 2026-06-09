@@ -1,0 +1,19 @@
+---
+# ── Connection ──
+keycloak_realm_url: "{{ keycloak_route_url | default(identity_auth.keycloak.url | default('http://localhost:8080')) }}"
+keycloak_realm_admin_user: "{{ identity_auth.keycloak.admin_user | default('admin') }}"
+keycloak_realm_admin_password: "{{ identity_auth.keycloak.admin_password | default('changeme') }}"
+keycloak_realm_context: ""
+keycloak_realm_no_log: false
+
+# ── Realms to manage ──
+keycloak_realms: []
+#   - name: AppRealm
+#     display_name: Application Realm
+#     enabled: true
+#     login_theme: ""
+#     registration_allowed: false
+#     password_policy: "length(8) and digits(1) and upperCase(1)"
+#     token_lifespan: 300
+#     sso_session_idle: 1800
+#     sso_session_max: 36000

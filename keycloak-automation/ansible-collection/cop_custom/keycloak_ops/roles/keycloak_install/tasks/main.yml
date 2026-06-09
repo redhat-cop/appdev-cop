@@ -1,0 +1,9 @@
+---
+- name: Validate platform selection
+  ansible.builtin.assert:
+    that:
+      - keycloak_platform in ['openshift', 'baremetal']
+    fail_msg: "keycloak_platform must be 'openshift' or 'baremetal', got '{{ keycloak_platform }}'"
+
+- name: "Install Keycloak on {{ keycloak_platform }}"
+  ansible.builtin.include_tasks: "platform_{{ keycloak_platform }}.yml"

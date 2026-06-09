@@ -1,0 +1,25 @@
+---
+- name: Validate OpenShift credentials
+  when: auth_setup_openshift
+  ansible.builtin.include_tasks: openshift.yml
+
+- name: Validate Keycloak credentials
+  when: auth_setup_keycloak and auth_keycloak_url | length > 0
+  ansible.builtin.include_tasks: keycloak.yml
+
+- name: Publish auth context as facts
+  ansible.builtin.set_fact:
+    identity_auth:
+      openshift:
+        api_url: "{{ auth_openshift_api_url }}"
+        token: "{{ auth_openshift_token }}"
+        kubeconfig: "{{ auth_openshift_kubeconfig }}"
+        validate_certs: "{{ auth_openshift_validate_certs }}"
+        ready: "{{ _ocp_auth_ready | default(false) }}"
+      keycloak:
+        url: "{{ auth_keycloak_url }}"
+        admin_user: "{{ auth_keycloak_admin_user }}"
+        admin_password: "{{ auth_keycloak_admin_password }}"
+        admin_realm: "{{ auth_keycloak_admin_realm }}"
+        ready: "{{ _kc_auth_ready | default(false) }}"
+    cacheable: true

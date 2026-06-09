@@ -1,0 +1,7 @@
+---
+- name: Create/update users
+  ansible.builtin.include_tasks: user.yml
+  loop: "{{ keycloak_users }}"
+  loop_control:
+    loop_var: _user
+    label: "{{ _user.realm }}/{{ _user.username }}"

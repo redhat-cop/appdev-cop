@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+db=postgres
+db-url-host={{ keycloak_install_db_host }}
+db-url-port={{ keycloak_install_db_port }}
+db-url-database={{ keycloak_install_db_name }}
+db-username={{ keycloak_install_db_user }}
+db-password={{ keycloak_install_db_password }}
+
+http-enabled=true
+http-port={{ keycloak_install_http_port }}
+hostname-strict=false
+
+health-enabled=true
+metrics-enabled=true

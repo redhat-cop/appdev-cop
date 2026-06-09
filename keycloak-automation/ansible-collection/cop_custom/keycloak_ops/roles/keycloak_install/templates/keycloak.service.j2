@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Keycloak Identity Provider
+After=network.target postgresql.service
+
+[Service]
+Type=exec
+User=keycloak
+Group=keycloak
+Environment=KEYCLOAK_ADMIN={{ keycloak_install_admin_user }}
+Environment=KEYCLOAK_ADMIN_PASSWORD={{ keycloak_install_admin_password }}
+ExecStart={{ keycloak_install_dir }}/keycloak-{{ keycloak_install_version }}/bin/kc.sh start --optimized
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

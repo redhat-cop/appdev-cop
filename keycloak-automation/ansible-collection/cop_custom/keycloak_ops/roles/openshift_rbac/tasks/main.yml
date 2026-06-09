@@ -1,0 +1,16 @@
+---
+- name: Provision namespaces
+  ansible.builtin.include_tasks: namespaces.yml
+  when: openshift_rbac_namespaces | length > 0
+
+- name: Provision service accounts
+  ansible.builtin.include_tasks: service_accounts.yml
+  when: openshift_rbac_service_accounts | length > 0
+
+- name: Provision role bindings
+  ansible.builtin.include_tasks: rolebindings.yml
+  when: openshift_rbac_rolebindings | length > 0
+
+- name: Provision cluster role bindings
+  ansible.builtin.include_tasks: cluster_rolebindings.yml
+  when: openshift_rbac_cluster_rolebindings | length > 0

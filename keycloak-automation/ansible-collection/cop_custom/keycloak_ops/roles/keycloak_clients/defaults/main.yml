@@ -1,0 +1,30 @@
+---
+# ── Connection ──
+keycloak_clients_url: "{{ keycloak_route_url | default(identity_auth.keycloak.url | default('http://localhost:8080')) }}"
+keycloak_clients_admin_user: "{{ identity_auth.keycloak.admin_user | default('admin') }}"
+keycloak_clients_admin_password: "{{ identity_auth.keycloak.admin_password | default('changeme') }}"
+keycloak_clients_no_log: false
+
+# ── Clients to manage ──
+keycloak_clients: []
+#   - realm: AppRealm
+#     client_id: frontend-spa
+#     name: Frontend SPA
+#     public_client: true
+#     standard_flow_enabled: true
+#     direct_access_grants_enabled: false
+#     redirect_uris:
+#       - "https://app.example.com/*"
+#     web_origins:
+#       - "https://app.example.com"
+#     roles:
+#       - name: app-admin
+#       - name: app-user
+#
+#   - realm: AppRealm
+#     client_id: backend-api
+#     name: Backend API
+#     public_client: false
+#     service_accounts_enabled: true
+#     client_authenticator_type: client-secret
+#     secret: ""   # auto-generated if empty

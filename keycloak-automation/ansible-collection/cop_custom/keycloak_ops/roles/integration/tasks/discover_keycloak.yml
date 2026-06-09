@@ -1,0 +1,36 @@
+---
+- name: Fetch Keycloak Route from OpenShift
+  kubernetes.core.k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    name: "{{ integration_keycloak_route_name }}"
+    namespace: "{{ integration_keycloak_namespace }}"
+  register: _kc_route_info
+  when: integration_keycloak_url | length == 0
+
+- name: Build Keycloak URL from Route
+  ansible.builtin.set_fact:
+    _keycloak_url: "https://{{ _kc_route_info.resources[0].spec.host }}"
+    keycloak_route_url: "https://{{ _kc_route_info.resources[0].spec.host }}"
+  when:
+    - integration_keycloak_url | length == 0
+    - _kc_route_info.resources is defined
+    - _kc_route_info.resources | length > 0
+
+- name: Use explicit Keycloak URL if provided
+  ansible.builtin.set_fact:
+    _keycloak_url: "{{ integration_keycloak_url }}"
+    keycloak_route_url: "{{ integration_keycloak_url }}"
+  when: integration_keycloak_url | length > 0
+
+- name: Validate Keycloak is reachable
+  ansible.builtin.uri:
+    url: "{{ _keycloak_url }}/health/ready"
+    method: GET
+    validate_certs: false
+    status_code: 200
+    timeout: 10
+  register: _kc_health
+  retries: 5
+  delay: 5
+  until: _kc_health.status == 200

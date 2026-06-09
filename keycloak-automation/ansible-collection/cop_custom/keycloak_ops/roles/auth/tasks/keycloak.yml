@@ -1,0 +1,18 @@
+---
+- name: Test Keycloak admin API connectivity
+  ansible.builtin.uri:
+    url: "{{ auth_keycloak_url }}/realms/master/.well-known/openid-configuration"
+    method: GET
+    validate_certs: "{{ auth_openshift_validate_certs }}"
+    status_code: 200
+    timeout: 10
+  register: _kc_test
+  failed_when: false
+
+- name: Set Keycloak auth status
+  ansible.builtin.set_fact:
+    _kc_auth_ready: "{{ _kc_test.status | default(0) == 200 }}"
+
+- name: Report Keycloak auth result
+  ansible.builtin.debug:
+    msg: "Keycloak auth: {{ 'READY' if _kc_auth_ready else 'FAILED — Keycloak not reachable at ' + auth_keycloak_url }}"

@@ -1,0 +1,21 @@
+---
+- name: "Create/update realm: {{ item.name }}"
+  redhat.rhbk.rhbk_realm:
+    auth_keycloak_url: "{{ keycloak_realm_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_realm_admin_user }}"
+    auth_password: "{{ keycloak_realm_admin_password }}"
+    realm: "{{ item.name }}"
+    enabled: "{{ item.enabled | default(true) }}"
+    display_name: "{{ item.display_name | default(item.name) }}"
+    login_theme: "{{ item.login_theme | default(omit) }}"
+    registration_allowed: "{{ item.registration_allowed | default(false) }}"
+    password_policy: "{{ item.password_policy | default(omit) }}"
+    access_token_lifespan: "{{ item.token_lifespan | default(omit) }}"
+    sso_session_idle_timeout: "{{ item.sso_session_idle | default(omit) }}"
+    sso_session_max_lifespan: "{{ item.sso_session_max | default(omit) }}"
+    state: present
+  loop: "{{ keycloak_realms }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: "{{ keycloak_realm_no_log }}"

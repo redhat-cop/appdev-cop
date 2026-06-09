@@ -1,0 +1,52 @@
+---
+- name: Obtain admin token
+  ansible.builtin.uri:
+    url: "{{ keycloak_configure_url }}/realms/{{ keycloak_configure_admin_realm }}/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      grant_type: password
+      client_id: admin-cli
+      username: "{{ keycloak_configure_admin_user }}"
+      password: "{{ keycloak_configure_admin_password }}"
+    validate_certs: false
+    status_code: 200
+  register: _token
+  no_log: "{{ keycloak_configure_no_log }}"
+
+- name: Store admin token
+  ansible.builtin.set_fact:
+    _kc_admin_token: "{{ _token.json.access_token }}"
+  no_log: true
+
+- name: Configure master realm settings
+  ansible.builtin.uri:
+    url: "{{ keycloak_configure_url }}/admin/realms/{{ keycloak_configure_admin_realm }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ _kc_admin_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      loginTheme: "{{ keycloak_configure_login_theme | default(omit, true) }}"
+      adminTheme: "{{ keycloak_configure_admin_theme | default(omit, true) }}"
+      eventsEnabled: "{{ keycloak_configure_events_enabled }}"
+      eventsExpiration: "{{ keycloak_configure_events_expiration }}"
+    validate_certs: false
+    status_code: [200, 204]
+  when: keycloak_configure_login_theme | length > 0 or keycloak_configure_events_enabled
+
+- name: Configure SMTP in master realm
+  ansible.builtin.uri:
+    url: "{{ keycloak_configure_url }}/admin/realms/{{ keycloak_configure_admin_realm }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ _kc_admin_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      smtpServer: "{{ keycloak_configure_smtp }}"
+    validate_certs: false
+    status_code: [200, 204]
+  when: keycloak_configure_smtp | length > 0
+  no_log: "{{ keycloak_configure_no_log }}"

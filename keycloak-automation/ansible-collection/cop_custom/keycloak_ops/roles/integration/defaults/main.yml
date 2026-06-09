@@ -1,0 +1,23 @@
+---
+# ── OpenShift connection ──
+integration_openshift_api_url: "{{ identity_auth.openshift.api_url | default('') }}"
+
+# ── Keycloak discovery ──
+integration_keycloak_namespace: keycloak
+integration_keycloak_route_name: keycloak
+integration_keycloak_url: ""
+
+# ── Keycloak admin (for creating the OCP client) ──
+integration_keycloak_admin_user: "{{ identity_auth.keycloak.admin_user | default('admin') }}"
+integration_keycloak_admin_password: "{{ identity_auth.keycloak.admin_password | default('changeme') }}"
+
+# ── OAuth / OIDC integration ──
+integration_setup_oauth: true
+integration_oauth_client_id: openshift-oauth
+integration_oauth_client_secret: ""
+integration_oauth_realm: master
+integration_oauth_display_name: "Keycloak SSO"
+integration_oauth_idp_name: keycloak
+
+# ── OpenShift OAuth redirect ──
+integration_openshift_oauth_callback: "https://oauth-openshift.apps.{{ _cluster_domain | default('example.com') }}/oauth2callback/{{ integration_oauth_idp_name }}"

@@ -1,0 +1,19 @@
+---
+- name: Wait for Keycloak deployment to become ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "{{ openshift_install_app_name }}"
+    namespace: "{{ openshift_install_namespace }}"
+  register: _kc_deploy
+  until:
+    - _kc_deploy.resources | length > 0
+    - (_kc_deploy.resources[0].status.readyReplicas | default(0)) >= openshift_install_replicas
+  retries: 60
+  delay: 10
+
+- name: Display Keycloak access info
+  ansible.builtin.debug:
+    msg: >-
+      Keycloak is ready in namespace '{{ openshift_install_namespace }}'.
+      URL: {{ keycloak_route_url | default('(route not created)') }}
+      Admin: {{ openshift_install_admin_user }}
