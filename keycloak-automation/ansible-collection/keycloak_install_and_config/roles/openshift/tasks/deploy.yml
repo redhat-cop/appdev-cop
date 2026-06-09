@@ -1,0 +1,93 @@
+---
+- name: Build Keycloak environment variables
+  ansible.builtin.set_fact:
+    _keycloak_env:
+      - name: KC_HEALTH_ENABLED
+        value: "{{ keycloak_ocp_health_enabled | string | lower }}"
+      - name: KC_METRICS_ENABLED
+        value: "{{ keycloak_ocp_metrics_enabled | string | lower }}"
+      - name: KC_PROXY_HEADERS
+        value: "{{ keycloak_ocp_proxy_headers }}"
+      - name: KC_HOSTNAME
+        value: "{{ keycloak_ocp_hostname }}"
+
+- name: Merge extra environment variables
+  ansible.builtin.set_fact:
+    _keycloak_env: >-
+      {{ _keycloak_env + (keycloak_ocp_extra_env | dict2items
+         | map('combine', {'name': 'value'})
+         | list) }}
+  when: keycloak_ocp_extra_env | length > 0
+
+- name: Deploy Keycloak
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ keycloak_ocp_app_name }}"
+        namespace: "{{ keycloak_ocp_project }}"
+        labels:
+          app: "{{ keycloak_ocp_app_name }}"
+      spec:
+        replicas: "{{ keycloak_ocp_replicas }}"
+        selector:
+          matchLabels:
+            app: "{{ keycloak_ocp_app_name }}"
+        template:
+          metadata:
+            labels:
+              app: "{{ keycloak_ocp_app_name }}"
+          spec:
+            containers:
+              - name: keycloak
+                image: "{{ keycloak_ocp_image }}"
+                args:
+                  - start
+                ports:
+                  - name: http
+                    containerPort: 8080
+                  - name: https
+                    containerPort: 8443
+                env: "{{ _keycloak_env }}"
+                envFrom:
+                  - secretRef:
+                      name: "{{ keycloak_ocp_app_name }}-admin"
+                  - secretRef:
+                      name: "{{ keycloak_ocp_app_name }}-db"
+                readinessProbe:
+                  httpGet:
+                    path: /health/ready
+                    port: http
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                livenessProbe:
+                  httpGet:
+                    path: /health/live
+                    port: http
+                  initialDelaySeconds: 60
+                  periodSeconds: 15
+                resources: "{{ keycloak_ocp_resources }}"
+
+- name: Create Keycloak Service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: "{{ keycloak_ocp_app_name }}"
+        namespace: "{{ keycloak_ocp_project }}"
+        labels:
+          app: "{{ keycloak_ocp_app_name }}"
+      spec:
+        selector:
+          app: "{{ keycloak_ocp_app_name }}"
+        ports:
+          - name: http
+            port: 8080
+            targetPort: 8080
+          - name: https
+            port: 8443
+            targetPort: 8443

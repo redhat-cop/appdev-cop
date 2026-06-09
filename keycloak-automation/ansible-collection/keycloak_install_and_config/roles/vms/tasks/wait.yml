@@ -1,0 +1,26 @@
+---
+- name: Set Keycloak base URL
+  ansible.builtin.set_fact:
+    _kc_scheme: "{{ 'https' if keycloak_vm_tls_enabled else 'http' }}"
+    _kc_port: "{{ keycloak_vm_https_port if keycloak_vm_tls_enabled else keycloak_vm_http_port }}"
+
+- name: Wait for Keycloak to respond on health endpoint
+  ansible.builtin.uri:
+    url: "{{ _kc_scheme }}://localhost:{{ _kc_port }}/health/ready"
+    validate_certs: false
+    status_code: 200
+  register: _health
+  until: _health.status == 200
+  retries: 30
+  delay: 10
+
+- name: Store Keycloak URL
+  ansible.builtin.set_fact:
+    keycloak_url: "{{ _kc_scheme }}://{{ keycloak_vm_hostname | default('localhost') }}:{{ _kc_port }}"
+
+- name: Display Keycloak access info
+  ansible.builtin.debug:
+    msg: >-
+      Keycloak is ready.
+      URL: {{ keycloak_url }}
+      Admin user: {{ keycloak_admin_user }}

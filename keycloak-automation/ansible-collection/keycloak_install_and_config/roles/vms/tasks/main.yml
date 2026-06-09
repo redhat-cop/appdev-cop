@@ -1,0 +1,31 @@
+---
+- name: Install Java
+  when: keycloak_vm_install_java
+  ansible.builtin.include_tasks: java.yml
+
+- name: Install and configure PostgreSQL
+  when: keycloak_vm_install_postgres
+  ansible.builtin.include_tasks: postgres.yml
+
+- name: Create Keycloak system user and group
+  ansible.builtin.include_tasks: user.yml
+
+- name: Download and install Keycloak
+  ansible.builtin.include_tasks: install.yml
+
+- name: Configure Keycloak
+  ansible.builtin.include_tasks: configure.yml
+
+- name: Set up systemd service
+  ansible.builtin.include_tasks: systemd.yml
+
+- name: Configure firewall
+  when: keycloak_vm_configure_firewall
+  ansible.builtin.include_tasks: firewall.yml
+
+- name: Wait for Keycloak to start
+  ansible.builtin.include_tasks: wait.yml
+
+- name: Configure realm
+  when: keycloak_vm_configure_realm
+  ansible.builtin.include_tasks: configure_realm.yml

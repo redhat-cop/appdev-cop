@@ -1,0 +1,30 @@
+# {{ ansible_managed }}
+# Keycloak server configuration — managed by Ansible
+
+# Database
+db={{ keycloak_db_vendor }}
+db-url-host={{ keycloak_db_host }}
+db-url-port={{ keycloak_db_port }}
+db-url-database={{ keycloak_db_name }}
+db-username={{ keycloak_db_user }}
+db-password={{ keycloak_db_password }}
+
+# HTTP
+http-enabled={{ keycloak_vm_http_enabled | lower }}
+http-port={{ keycloak_vm_http_port }}
+https-port={{ keycloak_vm_https_port }}
+{% if keycloak_vm_hostname | length > 0 %}
+hostname={{ keycloak_vm_hostname }}
+{% else %}
+hostname-strict=false
+{% endif %}
+
+{% if keycloak_vm_tls_enabled %}
+# TLS
+https-certificate-file={{ keycloak_vm_tls_cert_file }}
+https-certificate-key-file={{ keycloak_vm_tls_key_file }}
+{% endif %}
+
+# Health and metrics
+health-enabled=true
+metrics-enabled=true
