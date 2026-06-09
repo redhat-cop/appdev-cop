@@ -1,0 +1,59 @@
+---
+- name: Ensure OpenShift project exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: project.openshift.io/v1
+      kind: Project
+      metadata:
+        name: "{{ keycloak_ocp_project }}"
+
+- name: Deploy PostgreSQL database
+  when: keycloak_ocp_deploy_postgres
+  ansible.builtin.include_tasks: postgres.yml
+
+- name: Create Keycloak admin secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ keycloak_ocp_app_name }}-admin"
+        namespace: "{{ keycloak_ocp_project }}"
+      type: Opaque
+      stringData:
+        KEYCLOAK_ADMIN: "{{ keycloak_admin_user }}"
+        KEYCLOAK_ADMIN_PASSWORD: "{{ keycloak_admin_password }}"
+
+- name: Create Keycloak database secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ keycloak_ocp_app_name }}-db"
+        namespace: "{{ keycloak_ocp_project }}"
+      type: Opaque
+      stringData:
+        KC_DB: "{{ keycloak_db_vendor }}"
+        KC_DB_URL_HOST: "{{ keycloak_db_host }}"
+        KC_DB_URL_PORT: "{{ keycloak_db_port | string }}"
+        KC_DB_URL_DATABASE: "{{ keycloak_db_name }}"
+        KC_DB_USERNAME: "{{ keycloak_db_user }}"
+        KC_DB_PASSWORD: "{{ keycloak_db_password }}"
+
+- name: Deploy Keycloak
+  ansible.builtin.include_tasks: deploy.yml
+
+- name: Create Route
+  when: keycloak_ocp_tls_enabled
+  ansible.builtin.include_tasks: route.yml
+
+- name: Wait for Keycloak to be ready
+  ansible.builtin.include_tasks: wait.yml
+
+- name: Configure realm
+  when: keycloak_ocp_configure_realm
+  ansible.builtin.include_tasks: configure_realm.yml

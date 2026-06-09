@@ -1,0 +1,60 @@
+---
+- name: Obtain admin token
+  ansible.builtin.uri:
+    url: "{{ keycloak_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      grant_type: password
+      client_id: admin-cli
+      username: "{{ keycloak_admin_user }}"
+      password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    status_code: 200
+  register: _token_result
+  no_log: true
+
+- name: Store admin token
+  ansible.builtin.set_fact:
+    _kc_token: "{{ _token_result.json.access_token }}"
+  no_log: true
+
+- name: Create realm
+  ansible.builtin.uri:
+    url: "{{ keycloak_url }}/admin/realms"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ _kc_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      realm: "{{ keycloak_realm_name }}"
+      enabled: true
+    validate_certs: false
+    status_code:
+      - 201
+      - 409
+  when: keycloak_realm_name | length > 0
+
+- name: Create clients
+  ansible.builtin.uri:
+    url: "{{ keycloak_url }}/admin/realms/{{ keycloak_realm_name }}/clients"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ _kc_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      clientId: "{{ item.client_id }}"
+      name: "{{ item.name | default(item.client_id) }}"
+      enabled: "{{ item.enabled | default(true) }}"
+      publicClient: "{{ item.public_client | default(true) }}"
+      redirectUris: "{{ item.redirect_uris | default(['*']) }}"
+      webOrigins: "{{ item.web_origins | default(['*']) }}"
+    validate_certs: false
+    status_code:
+      - 201
+      - 409
+  loop: "{{ keycloak_clients }}"
+  loop_control:
+    label: "{{ item.client_id }}"

@@ -1,0 +1,12 @@
+---
+- name: Restart Keycloak service
+  ansible.builtin.systemd:
+    name: "{{ keycloak_vm_service_name }}"
+    state: restarted
+  listen: restart keycloak
+
+- name: Restart PostgreSQL
+  ansible.builtin.systemd:
+    name: postgresql
+    state: restarted
+  listen: restart postgresql

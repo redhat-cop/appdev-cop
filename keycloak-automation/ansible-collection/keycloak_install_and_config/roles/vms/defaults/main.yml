@@ -1,0 +1,58 @@
+---
+# --- Package management ---
+keycloak_vm_install_java: true
+keycloak_vm_java_package: java-21-openjdk-headless
+
+# --- Keycloak distribution ---
+keycloak_vm_version: "24.0.4"
+keycloak_vm_archive_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_vm_version }}/keycloak-{{ keycloak_vm_version }}.tar.gz"
+keycloak_vm_install_dir: /opt/keycloak
+keycloak_vm_home: "{{ keycloak_vm_install_dir }}/keycloak-{{ keycloak_vm_version }}"
+
+# For RHBK, set this to the RHBK zip/tar.gz URL and adjust keycloak_vm_home accordingly
+keycloak_vm_use_rhbk: false
+keycloak_vm_rhbk_archive_url: ""
+
+# --- System user ---
+keycloak_vm_user: keycloak
+keycloak_vm_group: keycloak
+
+# --- Admin credentials ---
+keycloak_admin_user: admin
+keycloak_admin_password: changeme
+
+# --- Database ---
+keycloak_db_vendor: postgres
+keycloak_db_host: localhost
+keycloak_db_port: 5432
+keycloak_db_name: keycloak
+keycloak_db_user: keycloak
+keycloak_db_password: keycloak
+
+keycloak_vm_install_postgres: true
+keycloak_vm_postgres_package: postgresql-server
+
+# --- Networking ---
+keycloak_vm_http_port: 8080
+keycloak_vm_https_port: 8443
+keycloak_vm_hostname: ""
+keycloak_vm_http_enabled: true
+
+# --- TLS ---
+keycloak_vm_tls_enabled: false
+keycloak_vm_tls_cert_file: ""
+keycloak_vm_tls_key_file: ""
+
+# --- Systemd ---
+keycloak_vm_service_name: keycloak
+keycloak_vm_service_enabled: true
+keycloak_vm_service_state: started
+
+# --- Firewall ---
+keycloak_vm_configure_firewall: true
+
+# --- Realm configuration (optional) ---
+keycloak_vm_configure_realm: false
+keycloak_realm_name: ""
+keycloak_clients: []
+keycloak_client_scopes: []
