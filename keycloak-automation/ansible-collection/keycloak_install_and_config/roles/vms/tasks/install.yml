@@ -1,0 +1,32 @@
+---
+- name: Set archive URL
+  ansible.builtin.set_fact:
+    _kc_archive_url: "{{ keycloak_vm_rhbk_archive_url if (keycloak_vm_use_rhbk and keycloak_vm_rhbk_archive_url | length > 0) else keycloak_vm_archive_url }}"
+
+- name: Create install directory
+  ansible.builtin.file:
+    path: "{{ keycloak_vm_install_dir }}"
+    state: directory
+    owner: "{{ keycloak_vm_user }}"
+    group: "{{ keycloak_vm_group }}"
+    mode: "0755"
+
+- name: Download Keycloak archive
+  ansible.builtin.get_url:
+    url: "{{ _kc_archive_url }}"
+    dest: "/tmp/keycloak-{{ keycloak_vm_version }}.tar.gz"
+    mode: "0644"
+
+- name: Extract Keycloak archive
+  ansible.builtin.unarchive:
+    src: "/tmp/keycloak-{{ keycloak_vm_version }}.tar.gz"
+    dest: "{{ keycloak_vm_install_dir }}"
+    remote_src: true
+    owner: "{{ keycloak_vm_user }}"
+    group: "{{ keycloak_vm_group }}"
+    creates: "{{ keycloak_vm_home }}/bin/kc.sh"
+
+- name: Remove downloaded archive
+  ansible.builtin.file:
+    path: "/tmp/keycloak-{{ keycloak_vm_version }}.tar.gz"
+    state: absent

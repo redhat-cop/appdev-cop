@@ -1,0 +1,35 @@
+---
+- name: Create Keycloak configuration directory
+  ansible.builtin.file:
+    path: "{{ keycloak_vm_home }}/conf"
+    state: directory
+    owner: "{{ keycloak_vm_user }}"
+    group: "{{ keycloak_vm_group }}"
+    mode: "0750"
+
+- name: Deploy keycloak.conf
+  ansible.builtin.template:
+    src: keycloak.conf.j2
+    dest: "{{ keycloak_vm_home }}/conf/keycloak.conf"
+    owner: "{{ keycloak_vm_user }}"
+    group: "{{ keycloak_vm_group }}"
+    mode: "0640"
+  notify: restart keycloak
+
+- name: Create data directory
+  ansible.builtin.file:
+    path: "{{ keycloak_vm_home }}/data"
+    state: directory
+    owner: "{{ keycloak_vm_user }}"
+    group: "{{ keycloak_vm_group }}"
+    mode: "0750"
+
+- name: Build Keycloak (optimized mode)
+  ansible.builtin.command:
+    cmd: "{{ keycloak_vm_home }}/bin/kc.sh build"
+  become: true
+  become_user: "{{ keycloak_vm_user }}"
+  environment:
+    KEYCLOAK_ADMIN: "{{ keycloak_admin_user }}"
+    KEYCLOAK_ADMIN_PASSWORD: "{{ keycloak_admin_password }}"
+  changed_when: true

@@ -1,0 +1,30 @@
+---
+namespace: appdev_cop
+name: keycloak_install_and_config
+version: 1.0.0
+readme: README.md
+authors:
+  - AppDev CoP <appdev-cop@redhat.com>
+description: >-
+  Ansible collection for installing and configuring Red Hat Build of Keycloak
+  (RHBK) on OpenShift and virtual machines (RHEL/Fedora).
+license:
+  - Apache-2.0
+tags:
+  - keycloak
+  - rhbk
+  - openshift
+  - kubernetes
+  - identity
+  - sso
+  - authentication
+dependencies:
+  kubernetes.core: ">=2.4.0"
+  community.general: ">=6.0.0"
+repository: https://github.com/pamenon/appdev-cop
+documentation: https://github.com/pamenon/appdev-cop/tree/main/keycloak-automation/ansible-collection
+homepage: https://github.com/pamenon/appdev-cop
+issues: https://github.com/pamenon/appdev-cop/issues
+build_ignore:
+  - "*.pyc"
+  - __pycache__

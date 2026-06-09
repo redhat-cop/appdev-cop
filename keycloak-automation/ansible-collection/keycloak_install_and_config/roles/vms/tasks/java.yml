@@ -1,0 +1,14 @@
+---
+- name: Install Java runtime
+  ansible.builtin.dnf:
+    name: "{{ keycloak_vm_java_package }}"
+    state: present
+
+- name: Verify Java installation
+  ansible.builtin.command: java -version
+  register: _java_version
+  changed_when: false
+
+- name: Display Java version
+  ansible.builtin.debug:
+    msg: "{{ _java_version.stderr_lines[0] }}"

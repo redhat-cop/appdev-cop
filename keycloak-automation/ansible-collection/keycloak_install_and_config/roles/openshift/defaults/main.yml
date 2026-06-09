@@ -1,0 +1,52 @@
+---
+# --- Connection ---
+keycloak_ocp_project: keycloak
+keycloak_ocp_app_name: keycloak
+
+# --- Image ---
+keycloak_ocp_image: registry.redhat.io/rhbk/keycloak-rhel9:latest
+keycloak_ocp_replicas: 1
+
+# --- Admin credentials ---
+keycloak_admin_user: admin
+keycloak_admin_password: changeme
+
+# --- Database ---
+keycloak_db_vendor: postgres
+keycloak_db_host: postgres
+keycloak_db_port: 5432
+keycloak_db_name: keycloak
+keycloak_db_user: keycloak
+keycloak_db_password: keycloak
+
+keycloak_ocp_deploy_postgres: true
+keycloak_ocp_postgres_image: registry.redhat.io/rhel9/postgresql-15:latest
+keycloak_ocp_postgres_storage_size: 1Gi
+keycloak_ocp_postgres_storage_class: ""
+
+# --- Networking ---
+keycloak_ocp_hostname: ""
+keycloak_ocp_tls_enabled: true
+keycloak_ocp_route_tls_termination: edge
+
+# --- Keycloak configuration ---
+keycloak_ocp_health_enabled: true
+keycloak_ocp_metrics_enabled: true
+keycloak_ocp_proxy_headers: xforwarded
+keycloak_ocp_extra_env: {}
+
+# --- Resource limits ---
+keycloak_ocp_resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 1Gi
+
+# --- Realm configuration (optional) ---
+keycloak_ocp_configure_realm: false
+keycloak_realm_name: ""
+keycloak_clients: []
+keycloak_client_scopes: []
+keycloak_auth_flows: []

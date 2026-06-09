@@ -1,0 +1,19 @@
+---
+- name: Wait for Keycloak deployment to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "{{ keycloak_ocp_app_name }}"
+    namespace: "{{ keycloak_ocp_project }}"
+  register: _kc_deploy
+  until:
+    - _kc_deploy.resources | length > 0
+    - (_kc_deploy.resources[0].status.readyReplicas | default(0)) >= keycloak_ocp_replicas
+  retries: 60
+  delay: 10
+
+- name: Display Keycloak access info
+  ansible.builtin.debug:
+    msg: >-
+      Keycloak is ready.
+      URL: {{ keycloak_url | default('http://' + keycloak_ocp_app_name + '.' + keycloak_ocp_project + '.svc:8080') }}
+      Admin user: {{ keycloak_admin_user }}

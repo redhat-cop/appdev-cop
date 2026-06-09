@@ -1,0 +1,104 @@
+---
+- name: Create PostgreSQL PVC
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: "{{ keycloak_db_host }}-data"
+        namespace: "{{ keycloak_ocp_project }}"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "{{ keycloak_ocp_postgres_storage_size }}"
+        storageClassName: "{{ keycloak_ocp_postgres_storage_class | default(omit, true) }}"
+
+- name: Create PostgreSQL Secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ keycloak_db_host }}-credentials"
+        namespace: "{{ keycloak_ocp_project }}"
+      type: Opaque
+      stringData:
+        POSTGRESQL_USER: "{{ keycloak_db_user }}"
+        POSTGRESQL_PASSWORD: "{{ keycloak_db_password }}"
+        POSTGRESQL_DATABASE: "{{ keycloak_db_name }}"
+
+- name: Deploy PostgreSQL
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ keycloak_db_host }}"
+        namespace: "{{ keycloak_ocp_project }}"
+        labels:
+          app: "{{ keycloak_db_host }}"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "{{ keycloak_db_host }}"
+        template:
+          metadata:
+            labels:
+              app: "{{ keycloak_db_host }}"
+          spec:
+            containers:
+              - name: postgresql
+                image: "{{ keycloak_ocp_postgres_image }}"
+                ports:
+                  - containerPort: 5432
+                envFrom:
+                  - secretRef:
+                      name: "{{ keycloak_db_host }}-credentials"
+                volumeMounts:
+                  - name: pgdata
+                    mountPath: /var/lib/pgsql/data
+                resources:
+                  requests:
+                    cpu: 250m
+                    memory: 256Mi
+                  limits:
+                    cpu: "1"
+                    memory: 512Mi
+            volumes:
+              - name: pgdata
+                persistentVolumeClaim:
+                  claimName: "{{ keycloak_db_host }}-data"
+
+- name: Create PostgreSQL Service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: "{{ keycloak_db_host }}"
+        namespace: "{{ keycloak_ocp_project }}"
+      spec:
+        selector:
+          app: "{{ keycloak_db_host }}"
+        ports:
+          - port: 5432
+            targetPort: 5432
+
+- name: Wait for PostgreSQL to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "{{ keycloak_db_host }}"
+    namespace: "{{ keycloak_ocp_project }}"
+  register: _pg_deploy
+  until:
+    - _pg_deploy.resources | length > 0
+    - (_pg_deploy.resources[0].status.readyReplicas | default(0)) >= 1
+  retries: 30
+  delay: 10

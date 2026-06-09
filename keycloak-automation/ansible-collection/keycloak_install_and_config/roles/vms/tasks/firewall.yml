@@ -1,0 +1,16 @@
+---
+- name: Open Keycloak HTTP port in firewall
+  ansible.posix.firewalld:
+    port: "{{ keycloak_vm_http_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  when: keycloak_vm_http_enabled
+
+- name: Open Keycloak HTTPS port in firewall
+  ansible.posix.firewalld:
+    port: "{{ keycloak_vm_https_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  when: keycloak_vm_tls_enabled
