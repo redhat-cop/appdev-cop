@@ -24,7 +24,7 @@ knowledge-base-ai-assistant/
 Install dependencies for `doc_scraping.py`:
 
 ```bash
-pip install typer rich docling sentence-transformers faiss-cpu langchain-text-splitters torch numpy
+pip install typer rich docling sentence-transformers faiss-cpu langchain-text-splitters torch numpy opencv-python-headless
 ```
 
 Install additional dependencies for `web_crawl.py`:
