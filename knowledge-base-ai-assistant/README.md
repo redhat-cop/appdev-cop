@@ -11,3 +11,6 @@ Paulo Menon / RedHat
 
 Date: June 2026
 ```
+Docling
+SDG
+Training
