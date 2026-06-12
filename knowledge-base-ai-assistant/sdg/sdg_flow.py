@@ -18,7 +18,7 @@ flow = Flow.from_yaml(flow_path)
 flow.set_model_config(
     model="hosted_vllm/ibm-granite/granite-3.0-8b-instruct",
     api_base="http://127.0.0.1:8000/v1",
-    api_key="rhoai-local-token",
+    api_key="",
     max_tokens=512
 )
 
