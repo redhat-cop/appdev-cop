@@ -15,7 +15,7 @@ An in-memory H2 database backs the `Fruit` entity. Seed data is loaded from `imp
 
 ```bash
 cd panache-orm
-mvn quarkus:dev
+./mvnw quarkus:dev
 ```
 
 The HTTP server listens on port **8090**.
@@ -65,5 +65,5 @@ curl -s -X DELETE http://localhost:8090/fruits/1
 ## Tests
 
 ```bash
-mvn test
+./mvnw test
 ```
