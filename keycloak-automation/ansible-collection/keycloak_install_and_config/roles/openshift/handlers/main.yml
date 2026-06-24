@@ -1,0 +1,13 @@
+---
+- name: Restart Keycloak deployment
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ keycloak_ocp_app_name }}"
+        namespace: "{{ keycloak_ocp_project }}"
+    wait: true
+    wait_timeout: 300
+  listen: restart keycloak

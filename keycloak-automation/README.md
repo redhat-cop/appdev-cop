@@ -30,8 +30,14 @@ keycloak-automation/
 │   ├── requirements.txt                  # Python dependencies
 │   └── README.md
 │
-└── ansible-collection/             # Placeholder for custom Ansible collection modules
-    └── README.md
+└── ansible-collection/             # Custom Ansible collection for Keycloak install & config
+    └── keycloak_install_and_config/
+        ├── galaxy.yml                    # Collection metadata (appdev_cop.keycloak_install_and_config)
+        ├── roles/
+        │   ├── openshift/                # Deploy Keycloak on OpenShift
+        │   └── vms/                      # Install Keycloak on RHEL/Fedora VMs
+        ├── playbooks/                    # Example playbooks for both roles
+        └── README.md
 ```
 
 ---
@@ -160,6 +166,19 @@ ansible-playbook playbooks/rhbk_add_authentication_flow.yaml \
 | Update execution requirements | — | Yes |
 
 > New modules for client scopes and authentication flows have been contributed upstream — see [ansible-middleware/keycloak PR](https://github.com/ansible-middleware/keycloak/pull/325). Once merged, these tasks will also be available natively in the collection.
+
+---
+
+## Ansible Collection — Install & Configure
+
+The `ansible-collection/` folder contains the `appdev_cop.keycloak_install_and_config` collection with two roles:
+
+| Role | Target | What it does |
+|:-----|:-------|:-------------|
+| `openshift` | OpenShift 4.12+ | Deploy Keycloak with PostgreSQL, Route, Secrets, health probes, and optional realm/client configuration |
+| `vms` | RHEL 8/9 / Fedora | Install Keycloak from archive, systemd service, PostgreSQL, firewall, and optional realm/client configuration |
+
+See the [collection README](ansible-collection/keycloak_install_and_config/README.md) for full documentation.
 
 ---
 

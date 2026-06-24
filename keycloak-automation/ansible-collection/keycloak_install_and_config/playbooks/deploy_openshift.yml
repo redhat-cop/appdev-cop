@@ -1,0 +1,30 @@
+---
+- name: Deploy Keycloak on OpenShift
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - role: appdev_cop.keycloak_install_and_config.openshift
+      keycloak_ocp_project: keycloak
+      keycloak_admin_user: admin
+      keycloak_admin_password: changeme
+      keycloak_ocp_replicas: 1
+
+      keycloak_ocp_configure_realm: true
+      keycloak_realm_name: AppRealm
+      keycloak_clients:
+        - client_id: frontend-app
+          name: Frontend Application
+          public_client: true
+          redirect_uris:
+            - "https://frontend.example.com/*"
+          web_origins:
+            - "https://frontend.example.com"
+        - client_id: backend-api
+          name: Backend API
+          public_client: false
+      keycloak_client_scopes:
+        - name: app-scope
+          protocol: openid-connect
+          description: Custom scope for the application

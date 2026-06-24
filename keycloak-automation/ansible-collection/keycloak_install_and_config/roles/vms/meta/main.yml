@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  role_name: vms
+  author: AppDev CoP
+  description: Install and configure Red Hat Build of Keycloak on RHEL/Fedora virtual machines
+  company: Red Hat
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+    - name: Fedora
+      versions:
+        - "39"
+        - "40"
+        - "41"
+  galaxy_tags:
+    - keycloak
+    - rhbk
+    - rhel
+    - fedora
+    - sso
+    - vm
+dependencies: []

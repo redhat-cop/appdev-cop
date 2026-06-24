@@ -1,0 +1,19 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Red Hat Build of Keycloak
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=exec
+User={{ keycloak_vm_user }}
+Group={{ keycloak_vm_group }}
+Environment=KEYCLOAK_ADMIN={{ keycloak_admin_user }}
+Environment=KEYCLOAK_ADMIN_PASSWORD={{ keycloak_admin_password }}
+ExecStart={{ keycloak_vm_home }}/bin/kc.sh start --optimized
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

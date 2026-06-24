@@ -1,0 +1,16 @@
+---
+- name: Create Keycloak group
+  ansible.builtin.group:
+    name: "{{ keycloak_vm_group }}"
+    system: true
+    state: present
+
+- name: Create Keycloak user
+  ansible.builtin.user:
+    name: "{{ keycloak_vm_user }}"
+    group: "{{ keycloak_vm_group }}"
+    home: "{{ keycloak_vm_install_dir }}"
+    shell: /sbin/nologin
+    system: true
+    create_home: false
+    state: present

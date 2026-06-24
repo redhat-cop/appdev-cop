@@ -1,0 +1,48 @@
+---
+- name: Install PostgreSQL server
+  ansible.builtin.dnf:
+    name: "{{ keycloak_vm_postgres_package }}"
+    state: present
+
+- name: Initialize PostgreSQL database
+  ansible.builtin.command: postgresql-setup --initdb
+  args:
+    creates: /var/lib/pgsql/data/PG_VERSION
+
+- name: Enable and start PostgreSQL
+  ansible.builtin.systemd:
+    name: postgresql
+    enabled: true
+    state: started
+
+- name: Install psycopg2 for Ansible postgresql modules
+  ansible.builtin.dnf:
+    name: python3-psycopg2
+    state: present
+
+- name: Create Keycloak database user
+  become: true
+  become_user: postgres
+  community.general.postgresql_user:
+    name: "{{ keycloak_db_user }}"
+    password: "{{ keycloak_db_password }}"
+    state: present
+
+- name: Create Keycloak database
+  become: true
+  become_user: postgres
+  community.general.postgresql_db:
+    name: "{{ keycloak_db_name }}"
+    owner: "{{ keycloak_db_user }}"
+    state: present
+
+- name: Allow password authentication for Keycloak DB user
+  ansible.builtin.lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    insertbefore: "^host\\s+all\\s+all"
+    line: "host    {{ keycloak_db_name }}    {{ keycloak_db_user }}    127.0.0.1/32    scram-sha-256"
+    state: present
+  notify: restart postgresql
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

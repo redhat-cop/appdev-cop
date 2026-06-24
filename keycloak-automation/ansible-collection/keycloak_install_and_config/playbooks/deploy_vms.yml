@@ -1,0 +1,27 @@
+---
+- name: Deploy Keycloak on RHEL/Fedora VMs
+  hosts: keycloak_servers
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: appdev_cop.keycloak_install_and_config.vms
+      keycloak_vm_version: "24.0.4"
+      keycloak_admin_user: admin
+      keycloak_admin_password: changeme
+
+      keycloak_vm_http_port: 8080
+      keycloak_vm_hostname: ""
+      keycloak_vm_tls_enabled: false
+
+      keycloak_vm_configure_realm: true
+      keycloak_realm_name: AppRealm
+      keycloak_clients:
+        - client_id: frontend-app
+          name: Frontend Application
+          public_client: true
+          redirect_uris:
+            - "http://localhost:3000/*"
+        - client_id: backend-api
+          name: Backend API
+          public_client: false

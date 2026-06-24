@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: openshift
+  author: AppDev CoP
+  description: Install and configure Red Hat Build of Keycloak on OpenShift
+  company: Red Hat
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  platforms:
+    - name: OpenShift
+      versions:
+        - "4.12+"
+  galaxy_tags:
+    - keycloak
+    - rhbk
+    - openshift
+    - sso
+dependencies:
+  - kubernetes.core

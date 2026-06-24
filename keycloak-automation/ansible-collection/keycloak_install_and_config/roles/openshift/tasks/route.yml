@@ -1,0 +1,35 @@
+---
+- name: Create Keycloak Route
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: "{{ keycloak_ocp_app_name }}"
+        namespace: "{{ keycloak_ocp_project }}"
+        labels:
+          app: "{{ keycloak_ocp_app_name }}"
+      spec:
+        host: "{{ keycloak_ocp_hostname | default(omit, true) }}"
+        to:
+          kind: Service
+          name: "{{ keycloak_ocp_app_name }}"
+          weight: 100
+        port:
+          targetPort: http
+        tls:
+          termination: "{{ keycloak_ocp_route_tls_termination }}"
+          insecureEdgeTerminationPolicy: Redirect
+
+- name: Retrieve Route hostname
+  kubernetes.core.k8s_info:
+    kind: Route
+    name: "{{ keycloak_ocp_app_name }}"
+    namespace: "{{ keycloak_ocp_project }}"
+  register: _keycloak_route
+
+- name: Store Keycloak URL
+  ansible.builtin.set_fact:
+    keycloak_url: "https://{{ _keycloak_route.resources[0].spec.host }}"
+  when: _keycloak_route.resources | length > 0
