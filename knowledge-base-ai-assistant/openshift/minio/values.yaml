@@ -1,0 +1,18 @@
+# Default values for the minio-ocp umbrella chart.
+# Subchart values must be nested under the dependency name.
+minio:
+  mode: standalone
+
+  rootUser: "minioadmin"
+  rootPassword: "minio-strong-password"
+
+  securityContext:
+    enabled: false
+
+  persistence:
+    enabled: true
+    size: 10Gi
+    # storageClass: "gp3"
+
+  service:
+    type: ClusterIP
