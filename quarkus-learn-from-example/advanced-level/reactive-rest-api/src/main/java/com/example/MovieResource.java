@@ -1,5 +1,6 @@
 package com.example;
 
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.Consumes;
@@ -42,6 +43,7 @@ public class MovieResource {
     }
 
     @POST
+    @WithTransaction
     public Uni<Response> create(Movie movie) {
         return movie.persist()
                 .replaceWith(Response.created(URI.create("/movies/" + movie.id)).entity(movie).build());

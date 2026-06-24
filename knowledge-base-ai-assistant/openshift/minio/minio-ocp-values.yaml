@@ -1,0 +1,23 @@
+# minio-ocp-values.yaml
+
+# Run as standalone for a sandbox. Set to "distributed" for an enterprise cluster
+mode: standalone
+
+# Your root S3 credentials for the Console and API
+rootUser: "minioadmin"
+rootPassword: "minio-strong-password"
+
+# CRUCIAL FOR OPENSHIFT: Disable hardcoded user IDs/GIDs
+# This allows OpenShift to inject its own random non-root UID
+securityContext:
+  enabled: false
+
+# Configure persistent storage
+persistence:
+  enabled: true
+  size: 50Gi
+  # storageClass: "gp3" # Optional: Uncomment and define if you don't want to use the default class
+
+# Ensure services are created for external routing
+service:
+  type: ClusterIP

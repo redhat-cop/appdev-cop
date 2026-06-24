@@ -1,0 +1,10 @@
+apiVersion: v2
+name: minio-ocp
+description: MinIO object storage for OpenShift
+type: application
+version: 0.1.0
+appVersion: "RELEASE.2024-12-18T13-15-44Z"
+dependencies:
+  - name: minio
+    version: "5.4.0"
+    repository: https://charts.min.io/
