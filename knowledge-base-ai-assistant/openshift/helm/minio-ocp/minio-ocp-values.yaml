@@ -15,7 +15,7 @@ securityContext:
 # Configure persistent storage
 persistence:
   enabled: true
-  size: 50Gi
+  size: 100Gi
   # storageClass: "gp3" # Optional: Uncomment and define if you don't want to use the default class
 
 # Ensure services are created for external routing
