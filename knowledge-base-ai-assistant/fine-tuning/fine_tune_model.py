@@ -1,6 +1,8 @@
 import os
 import json
 import torch
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
@@ -22,6 +24,11 @@ os.environ["MKL_NUM_THREADS"] = "1"
 model_id = "ibm-granite/granite-3.0-8b-instruct"
 source_dataset = "/opt/app-root/src/knowledge-base-ai-assistant/sdg_hub/synthetic_training_data.jsonl"
 output_dir = "./granite-fine-tuned-checkpoints"
+
+s3_bucket = os.getenv("S3_BUCKET", "models")
+s3_prefix = os.getenv("S3_PREFIX", "finetuned/custom/v1/").strip("/") + "/"
+s3_endpoint = os.getenv("S3_ENDPOINT_URL", "")
+upload_to_s3 = os.getenv("UPLOAD_TO_S3", "true").lower() in {"1", "true", "yes"}
 
 # =====================================================================
 # 2. ADAPTIVE DATASET INGESTION & FORMATTING
@@ -123,7 +130,63 @@ trainer = Trainer(
 print("\n🏋️ Running forward and backward propagation cycles...")
 trainer.train()
 
+# =====================================================================
+# 7. PERSIST FINE-TUNED ARTIFACT LOCALLY
+# =====================================================================
+print("\n💾 Persisting fine-tuned model and tokenizer to local workspace...")
+trainer.save_model(output_dir)
+tokenizer.save_pretrained(output_dir)
+
+metadata = {
+    "base_model": model_id,
+    "source_dataset": source_dataset,
+    "artifact_format": "pytorch",
+    "s3_destination": f"s3://{s3_bucket}/{s3_prefix}",
+}
+with open(os.path.join(output_dir, "training_metadata.json"), "w", encoding="utf-8") as handle:
+    json.dump(metadata, handle, indent=2)
+
+print(f"Local artifact ready at: {os.path.abspath(output_dir)}")
+
+# =====================================================================
+# 8. PUSH FINE-TUNED ARTIFACT TO S3 / MINIO
+# =====================================================================
+def upload_directory_to_s3(local_dir: str, bucket: str, prefix: str) -> str:
+    s3_uri = f"s3://{bucket}/{prefix}"
+    s3_client_kwargs = {}
+    if s3_endpoint:
+        s3_client_kwargs["endpoint_url"] = s3_endpoint
+
+    s3 = boto3.client("s3", **s3_client_kwargs)
+    uploaded_files = []
+
+    for root, _, files in os.walk(local_dir):
+        for filename in files:
+            local_path = os.path.join(root, filename)
+            relative_path = os.path.relpath(local_path, local_dir)
+            object_key = f"{prefix}{relative_path}".replace("\\", "/")
+            s3.upload_file(local_path, bucket, object_key)
+            uploaded_files.append(object_key)
+
+    print(f"Uploaded {len(uploaded_files)} object(s) to {s3_uri}")
+    return s3_uri
+
+
+if upload_to_s3:
+    print(f"\n☁️ Uploading fine-tuned artifact to s3://{s3_bucket}/{s3_prefix}")
+    try:
+        s3_uri = upload_directory_to_s3(output_dir, s3_bucket, s3_prefix)
+    except (BotoCoreError, ClientError) as exc:
+        raise RuntimeError(
+            f"Failed to upload fine-tuned model to s3://{s3_bucket}/{s3_prefix}. "
+            f"Check S3/MinIO credentials and endpoint. Reason: {exc}"
+        ) from exc
+else:
+    s3_uri = f"s3://{s3_bucket}/{s3_prefix}"
+    print("\nSkipping S3 upload because UPLOAD_TO_S3=false")
+
 print("\n=========================================================")
-print(f"🎉 SUCCESS! Supervised Fine-Tuning complete.")
-print(f"💾 Fine-tuned model weights saved to: {os.path.abspath(output_dir)}")
+print("🎉 SUCCESS! Supervised Fine-Tuning complete.")
+print(f"💾 Local artifact: {os.path.abspath(output_dir)}")
+print(f"☁️  S3 artifact:   {s3_uri}")
 print("=========================================================")
