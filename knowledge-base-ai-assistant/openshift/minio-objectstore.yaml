@@ -1,0 +1,37 @@
+apiVersion: aistor.min.io/v1
+kind: ObjectStore
+metadata:
+  annotations:
+    io.kubernetes.cri-o.TrySkipVolumeSELinuxLabel: "true"
+  labels:
+    app: minio
+  name: my-objectstore
+  namespace: aistor
+spec:
+  cache:
+    enabled: false
+  certificates:
+    disableAutoCert: true
+  configuration:
+    name: storage-configuration
+  firewall:
+    enabled: false
+    imagePullPolicy: IfNotPresent
+  mountPath: /export
+  podManagementPolicy: Parallel
+  pools:
+  - name: pool-0
+    securityContext:
+      fsGroupChangePolicy: OnRootMismatch
+    servers: 1
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi
+        storageClassName: directpv-min-io
+    volumesPerServer: 4
+  pvcProtection: false
+  rollingTimeoutSeconds: 600

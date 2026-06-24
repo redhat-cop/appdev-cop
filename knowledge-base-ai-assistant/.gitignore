@@ -1,3 +1,16 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test / type-checker caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+=======
 # Python
 __pycache__/
 *.py[cod]
@@ -28,3 +41,4 @@ build/
 # Local data files (do not commit source documents)
 data/*
 !data/README.md
+
