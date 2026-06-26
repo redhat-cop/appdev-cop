@@ -1,8 +1,10 @@
 import os
+import sys
 import json
 import torch
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
+from boto3 import client
+from botocore.config import Config
+from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
@@ -11,7 +13,7 @@ print("🚀 RHOAI Direct Engine: Production Native Training Loop")
 print("=========================================================\n")
 
 # =====================================================================
-# 1. ENVIRONMENT SECURITY & STABILITY BOUNDARIES
+# 1. ENVIRONMENT SECURITY, S3 CONFIG & STABILITY BOUNDARIES
 # =====================================================================
 os.environ["HF_DATASETS_OFFLINE"] = "1"
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
@@ -23,11 +25,15 @@ os.environ["MKL_NUM_THREADS"] = "1"
 
 model_id = "ibm-granite/granite-3.0-8b-instruct"
 source_dataset = "/opt/app-root/src/knowledge-base-ai-assistant/sdg_hub/synthetic_training_data.jsonl"
-output_dir = "./granite-fine-tuned-checkpoints"
+output_dir = os.getenv("LOCAL_MODEL_PATH", "./granite-fine-tuned-checkpoints")
 
-s3_bucket = os.getenv("S3_BUCKET", "models")
+endpoint_url = os.getenv("AWS_S3_ENDPOINT")
+access_key = os.getenv("AWS_ACCESS_KEY_ID")
+secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+bucket_name = os.getenv("AWS_S3_BUCKET", "models")
 s3_prefix = os.getenv("S3_PREFIX", "finetuned/custom/v1/").strip("/") + "/"
-s3_endpoint = os.getenv("S3_ENDPOINT_URL", "")
+# Target: s3://models/finetuned/custom/v1/ (bucket=models, prefix=finetuned/custom/v1/)
+s3_uri = f"s3://{bucket_name}/{s3_prefix}"
 upload_to_s3 = os.getenv("UPLOAD_TO_S3", "true").lower() in {"1", "true", "yes"}
 
 # =====================================================================
@@ -134,6 +140,7 @@ trainer.train()
 # 7. PERSIST FINE-TUNED ARTIFACT LOCALLY
 # =====================================================================
 print("\n💾 Persisting fine-tuned model and tokenizer to local workspace...")
+os.makedirs(output_dir, exist_ok=True)
 trainer.save_model(output_dir)
 tokenizer.save_pretrained(output_dir)
 
@@ -141,48 +148,94 @@ metadata = {
     "base_model": model_id,
     "source_dataset": source_dataset,
     "artifact_format": "pytorch",
-    "s3_destination": f"s3://{s3_bucket}/{s3_prefix}",
+    "s3_destination": s3_uri,
 }
 with open(os.path.join(output_dir, "training_metadata.json"), "w", encoding="utf-8") as handle:
     json.dump(metadata, handle, indent=2)
 
+# Verify full Hugging Face artifact exists before S3 upload (inner-loop input).
+artifact_files = os.listdir(output_dir)
+has_config = "config.json" in artifact_files
+has_weights = any(
+    name == "pytorch_model.bin"
+    or name == "model.safetensors"
+    or (name.startswith("model-") and name.endswith(".safetensors"))
+    for name in artifact_files
+)
+has_tokenizer = "tokenizer_config.json" in artifact_files
+
+if not has_config or not has_weights or not has_tokenizer:
+    print("Error: Incomplete fine-tuned artifact. Required before upload:")
+    print("  - config.json")
+    print("  - model weights (pytorch_model.bin or model.safetensors)")
+    print("  - tokenizer_config.json")
+    print(f"Found in '{output_dir}': {artifact_files}")
+    sys.exit(1)
+
 print(f"Local artifact ready at: {os.path.abspath(output_dir)}")
+print(f"Files to upload ({len(artifact_files)}):")
+for name in sorted(artifact_files):
+    print(f"  - {name}")
 
 # =====================================================================
-# 8. PUSH FINE-TUNED ARTIFACT TO S3 / MINIO
+# 8. PUSH FINE-TUNED ARTIFACT TO S3 / MINIO  →  s3://models/finetuned/custom/v1/
 # =====================================================================
-def upload_directory_to_s3(local_dir: str, bucket: str, prefix: str) -> str:
-    s3_uri = f"s3://{bucket}/{prefix}"
-    s3_client_kwargs = {}
-    if s3_endpoint:
-        s3_client_kwargs["endpoint_url"] = s3_endpoint
-
-    s3 = boto3.client("s3", **s3_client_kwargs)
-    uploaded_files = []
-
-    for root, _, files in os.walk(local_dir):
-        for filename in files:
-            local_path = os.path.join(root, filename)
-            relative_path = os.path.relpath(local_path, local_dir)
-            object_key = f"{prefix}{relative_path}".replace("\\", "/")
-            s3.upload_file(local_path, bucket, object_key)
-            uploaded_files.append(object_key)
-
-    print(f"Uploaded {len(uploaded_files)} object(s) to {s3_uri}")
-    return s3_uri
-
 
 if upload_to_s3:
-    print(f"\n☁️ Uploading fine-tuned artifact to s3://{s3_bucket}/{s3_prefix}")
+    required_vars = {
+        "AWS_S3_ENDPOINT": endpoint_url,
+        "AWS_ACCESS_KEY_ID": access_key,
+        "AWS_SECRET_ACCESS_KEY": secret_key,
+        "AWS_S3_BUCKET": bucket_name,
+    }
+
+    missing_vars = [var for var, val in required_vars.items() if not val]
+    if missing_vars:
+        print(f"Error: Missing required environment variables: {', '.join(missing_vars)}")
+        sys.exit(1)
+
+    if not os.path.exists(output_dir):
+        print(f"Error: Local model directory not found at '{output_dir}'")
+        sys.exit(1)
+
+    print(f"Connecting to MinIO/S3 endpoint: {endpoint_url}")
+    print(f"Uploading all files from '{output_dir}' to '{s3_uri}'")
+
     try:
-        s3_uri = upload_directory_to_s3(output_dir, s3_bucket, s3_prefix)
-    except (BotoCoreError, ClientError) as exc:
-        raise RuntimeError(
-            f"Failed to upload fine-tuned model to s3://{s3_bucket}/{s3_prefix}. "
-            f"Check S3/MinIO credentials and endpoint. Reason: {exc}"
-        ) from exc
+        s3_client = client(
+            "s3",
+            endpoint_url=endpoint_url,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            config=Config(signature_version="s3v4"),
+        )
+
+        uploaded_files = []
+        for root, _, files in os.walk(output_dir):
+            for filename in files:
+                local_path = os.path.join(root, filename)
+                relative_path = os.path.relpath(local_path, output_dir)
+                s3_file_key = f"{s3_prefix}{relative_path}".replace("\\", "/")
+                s3_client.upload_file(
+                    Filename=local_path,
+                    Bucket=bucket_name,
+                    Key=s3_file_key,
+                )
+                uploaded_files.append(s3_file_key)
+                print(f"  ↑ s3://{bucket_name}/{s3_file_key}")
+
+        print(f"Successfully uploaded {len(uploaded_files)} object(s) to {s3_uri}")
+
+    except (NoCredentialsError, PartialCredentialsError):
+        print("Error: Invalid or incomplete AWS/MinIO credentials provided.")
+        sys.exit(1)
+    except ClientError as exc:
+        print(f"Client Error: {exc.response['Error']['Message']}")
+        sys.exit(1)
+    except Exception as exc:
+        print(f"An unexpected error occurred: {exc}")
+        sys.exit(1)
 else:
-    s3_uri = f"s3://{s3_bucket}/{s3_prefix}"
     print("\nSkipping S3 upload because UPLOAD_TO_S3=false")
 
 print("\n=========================================================")
