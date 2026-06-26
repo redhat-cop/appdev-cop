@@ -15,7 +15,25 @@ from sentence_transformers import SentenceTransformer
 
 app = typer.Typer()
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+
+def _resolve_script_dir() -> Path:
+    try:
+        return Path(__file__).resolve().parent
+    except NameError:
+        # Jupyter/IPython do not define __file__; locate docling from cwd.
+        cwd = Path.cwd()
+        candidates = [
+            cwd,
+            cwd / "docling",
+            cwd / "knowledge-base-ai-assistant" / "docling",
+        ]
+        for candidate in candidates:
+            if (candidate / "doc_scraping.py").exists():
+                return candidate
+        return cwd
+
+
+SCRIPT_DIR = _resolve_script_dir()
 DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "data"
 DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "out"
 
