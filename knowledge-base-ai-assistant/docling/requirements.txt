@@ -1,0 +1,16 @@
+# OpenShift AI workbench already provides: numpy, pandas, scipy, scikit-learn, kfp, boto3, mlflow.
+# Do not install numpy here — the image ships NumPy 2.x and downgrading can break other packages.
+
+# doc_scraping.py
+docling>=1.0.0
+faiss-cpu>=1.7.4
+langchain-text-splitters>=0.0.1
+sentence-transformers>=2.2.2
+typer[all]>=0.9.0
+rich>=13.0.0
+torch>=2.4.0
+opencv-python-headless>=4.8.0
+
+# web_crawl.py
+requests>=2.28.0
+beautifulsoup4>=4.12.0
