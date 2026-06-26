@@ -9,7 +9,15 @@ from bs4 import BeautifulSoup
 visited = set()
 to_visit = []
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+try:
+    SCRIPT_DIR = Path(__file__).resolve().parent
+except NameError:
+    cwd = Path.cwd()
+    candidates = [cwd, cwd / "docling", cwd / "knowledge-base-ai-assistant" / "docling"]
+    SCRIPT_DIR = next(
+        (c for c in candidates if (c / "web_crawl.py").exists()),
+        cwd,
+    )
 DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "data"
 
 
