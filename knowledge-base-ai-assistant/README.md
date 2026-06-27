@@ -14,3 +14,6 @@ Date: June 2026
 Docling
 SDG
 Training
+Chat
+S3
+MLOPS
