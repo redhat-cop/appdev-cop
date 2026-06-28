@@ -18,7 +18,7 @@ flow = Flow.from_yaml(flow_path)
 flow.set_model_config(
     model="hosted_vllm/ibm-granite/granite-3.0-8b-instruct",
     api_base="http://127.0.0.1:8000/v1",
-    api_key="",
+    api_key="rhoai-local-token",
     max_tokens=512
 )
 
@@ -43,12 +43,14 @@ raw_data = []
 for chunk in chunks:
     raw_data.append({
         "document": chunk,
-        "document_outline": "Technical operational guide detailing core system infrastructure, platform features, and deployment rules.",
-        "domain": "Enterprise Software and Cloud Infrastructure Operations",
-        "icl_document": "Sample technical layout statement.",
-        "icl_query_1": "What is the primary system deployment requirement?",
-        "icl_query_2": "How does the core system handle runtime operational errors?",
-        "icl_query_3": "Which management components are integrated by default?"
+        "document_outline": "Deploying Red Hat AI Inference on OpenShift Container Platform.",
+        "domain": "Enterprise AI",
+        "icl_document": "Red Hat AI Inference 3.4",
+        "icl_query_1": "How do I deploy Red Hat AI Inference containers?",
+        "icl_query_2": "What hardware accelerators and operators are supported in OpenShift?",
+        "icl_query_3": "How do I serve models from Hugging Face using vLLM?",
+        "icl_query_4": "What is the difference between standalone and distributed inference?",
+        "icl_query_5": "How do I install the Kernel Module Management Operator?"
     })
 
 dataset = Dataset.from_list(raw_data)
