@@ -23,7 +23,7 @@ flow.set_model_config(
 )
 
 # 4. Ingest the clean Markdown text created by Docling
-context_file = "/opt/app-root/src/knowledge-base-ai-assistant/out/RHEL_AI-Inference.md"
+context_file = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/out/RHOAI.md"
 if not os.path.exists(context_file):
     raise FileNotFoundError(f"Missing context asset: {context_file}. Run Docling first!")
 
@@ -43,14 +43,14 @@ raw_data = []
 for chunk in chunks:
     raw_data.append({
         "document": chunk,
-        "document_outline": "Deploying Red Hat AI Inference on OpenShift Container Platform.",
+        "document_outline": "Red Hat OpenShift AI Self-Managed Getting Started Guide.",
         "domain": "Enterprise AI",
-        "icl_document": "Red Hat AI Inference 3.4",
-        "icl_query_1": "How do I deploy Red Hat AI Inference containers?",
-        "icl_query_2": "What hardware accelerators and operators are supported in OpenShift?",
-        "icl_query_3": "How do I serve models from Hugging Face using vLLM?",
-        "icl_query_4": "What is the difference between standalone and distributed inference?",
-        "icl_query_5": "How do I install the Kernel Module Management Operator?"
+        "icl_document": "RedHat OpenShift AI 3.5",
+        "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
+        "icl_query_2": "How do I set up a project and workbench?",
+        "icl_query_3": "Explain the difference between model serving and AI pipelines.",
+        "icl_query_4": "How do connections help with Object Storage?",
+        "icl_query_5": "How do workbenches help with model development and training?"
     })
 
 dataset = Dataset.from_list(raw_data)
