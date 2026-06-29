@@ -24,7 +24,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 
 model_id = "ibm-granite/granite-3.0-8b-instruct"
-source_dataset = "/opt/app-root/src/knowledge-base-ai-assistant/sdg_hub/synthetic_training_data.jsonl"
+source_dataset = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/sdg/synthetic_training_data.jsonl"
 output_dir = os.getenv("LOCAL_MODEL_PATH", "./granite-fine-tuned-checkpoints")
 
 endpoint_url = os.getenv("AWS_S3_ENDPOINT")
@@ -32,9 +32,15 @@ access_key = os.getenv("AWS_ACCESS_KEY_ID")
 secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 bucket_name = os.getenv("AWS_S3_BUCKET", "models")
 s3_prefix = os.getenv("S3_PREFIX", "finetuned/custom/v1/").strip("/") + "/"
-# Target: s3://models/finetuned/custom/v1/ (bucket=models, prefix=finetuned/custom/v1/)
 s3_uri = f"s3://{bucket_name}/{s3_prefix}"
 upload_to_s3 = os.getenv("UPLOAD_TO_S3", "true").lower() in {"1", "true", "yes"}
+
+# DEBUG VISIBILITY: Inspect exactly what environment variables are present in RAM
+print("📡 Evaluated S3 Core Parameters from Environment:")
+print(f"  - AWS_S3_ENDPOINT:    '{endpoint_url}'")
+print(f"  - AWS_S3_BUCKET:      '{bucket_name}'")
+print(f"  - S3_PREFIX:          '{s3_prefix}'")
+print(f"  - UPLOAD_TO_S3:       {upload_to_s3}\n")
 
 # =====================================================================
 # 2. ADAPTIVE DATASET INGESTION & FORMATTING
@@ -75,30 +81,27 @@ raw_dataset = Dataset.from_list(formatted_texts)
 print(f"✨ Successfully mapped {len(formatted_texts)} aligned conversational chains.")
 
 # =====================================================================
-# 3. TOKENIZATION MANAGEMENT (FIX: Added Labels Generation)
+# 3. TOKENIZATION MANAGEMENT
 # =====================================================================
 print("🔧 Mapping token sequences from local workspace cache...")
 tokenizer = AutoTokenizer.from_pretrained(model_id, local_files_only=True)
 tokenizer.pad_token = tokenizer.eos_token
 
 def tokenize_handler(examples):
-    # Generate the base input IDs and attention masks
     result = tokenizer(examples["text"], truncation=True, max_length=512, padding="max_length")
-    
-    # FIX: Clone input_ids into labels so the model can calculate its own loss
     result["labels"] = result["input_ids"].copy()
     return result
 
 tokenized_dataset = raw_dataset.map(tokenize_handler, batched=True)
 
 # =====================================================================
-# 4. HARDWARE-OPTIMIZED MODEL ALLOCATION (L4 GPU 24GB SAFEGUARD)
+# 4. HARDWARE-OPTIMIZED MODEL ALLOCATION (YOUR ORIGINAL VERSION)
 # =====================================================================
 print("🧠 Allocating Granite 8B matrices into GPU Tensor Cores...")
 model = AutoModelForCausalLM.from_pretrained(
     model_id,
     device_map="auto",
-    dtype=torch.bfloat16,             # Cleaned up deprecated parameter name
+    dtype=torch.bfloat16,             
     local_files_only=True
 )
 
@@ -114,14 +117,14 @@ training_args = TrainingArguments(
     output_dir=output_dir,
     per_device_train_batch_size=2,    
     gradient_accumulation_steps=2,    
-    num_train_epochs=3,               
-    learning_rate=2e-5,               
-    logging_steps=1,                  
+    num_train_epochs=3,                
+    learning_rate=2e-5,                
+    logging_steps=1,                   
     fp16=False,
-    bf16=True,                        
-    gradient_checkpointing=True,      
+    bf16=True,                         
+    gradient_checkpointing=True,       
     save_strategy="no",
-    report_to="none"                  
+    report_to="none"                   
 )
 
 trainer = Trainer(
@@ -153,7 +156,6 @@ metadata = {
 with open(os.path.join(output_dir, "training_metadata.json"), "w", encoding="utf-8") as handle:
     json.dump(metadata, handle, indent=2)
 
-# Verify full Hugging Face artifact exists before S3 upload (inner-loop input).
 artifact_files = os.listdir(output_dir)
 has_config = "config.json" in artifact_files
 has_weights = any(
@@ -166,9 +168,6 @@ has_tokenizer = "tokenizer_config.json" in artifact_files
 
 if not has_config or not has_weights or not has_tokenizer:
     print("Error: Incomplete fine-tuned artifact. Required before upload:")
-    print("  - config.json")
-    print("  - model weights (pytorch_model.bin or model.safetensors)")
-    print("  - tokenizer_config.json")
     print(f"Found in '{output_dir}': {artifact_files}")
     sys.exit(1)
 
@@ -178,9 +177,8 @@ for name in sorted(artifact_files):
     print(f"  - {name}")
 
 # =====================================================================
-# 8. PUSH FINE-TUNED ARTIFACT TO S3 / MINIO  →  s3://models/finetuned/custom/v1/
+# 8. PUSH FINE-TUNED ARTIFACT TO S3 / MINIO
 # =====================================================================
-
 if upload_to_s3:
     required_vars = {
         "AWS_S3_ENDPOINT": endpoint_url,
@@ -194,20 +192,18 @@ if upload_to_s3:
         print(f"Error: Missing required environment variables: {', '.join(missing_vars)}")
         sys.exit(1)
 
-    if not os.path.exists(output_dir):
-        print(f"Error: Local model directory not found at '{output_dir}'")
-        sys.exit(1)
-
-    print(f"Connecting to MinIO/S3 endpoint: {endpoint_url}")
-    print(f"Uploading all files from '{output_dir}' to '{s3_uri}'")
+    print(f"\nConnecting to MinIO/S3 API target endpoint: {endpoint_url}")
+    print(f"Uploading all files to destination bucket path: {s3_uri}")
 
     try:
+        # Explicit keyword assignment and timeouts prevent silent network drops
         s3_client = client(
             "s3",
             endpoint_url=endpoint_url,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
-            config=Config(signature_version="s3v4"),
+	  #  verify=False,	
+            config=Config(signature_version="s3v4", connect_timeout=10, read_timeout=30),
         )
 
         uploaded_files = []
@@ -216,15 +212,18 @@ if upload_to_s3:
                 local_path = os.path.join(root, filename)
                 relative_path = os.path.relpath(local_path, output_dir)
                 s3_file_key = f"{s3_prefix}{relative_path}".replace("\\", "/")
+                
+                # Added verbose printing to track upload progress file-by-file
+                print(f"  ↑ Initializing push: {filename} ...")
                 s3_client.upload_file(
                     Filename=local_path,
                     Bucket=bucket_name,
                     Key=s3_file_key,
                 )
                 uploaded_files.append(s3_file_key)
-                print(f"  ↑ s3://{bucket_name}/{s3_file_key}")
+                print(f"    ↳ Complete: s3://{bucket_name}/{s3_file_key}")
 
-        print(f"Successfully uploaded {len(uploaded_files)} object(s) to {s3_uri}")
+        print(f"\n🎉 Successfully uploaded {len(uploaded_files)} object(s) to {s3_uri}")
 
     except (NoCredentialsError, PartialCredentialsError):
         print("Error: Invalid or incomplete AWS/MinIO credentials provided.")
@@ -233,7 +232,7 @@ if upload_to_s3:
         print(f"Client Error: {exc.response['Error']['Message']}")
         sys.exit(1)
     except Exception as exc:
-        print(f"An unexpected error occurred: {exc}")
+        print(f"An unexpected error occurred during transmission: {exc}")
         sys.exit(1)
 else:
     print("\nSkipping S3 upload because UPLOAD_TO_S3=false")
