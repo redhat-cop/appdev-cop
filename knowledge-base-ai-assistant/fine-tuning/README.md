@@ -122,10 +122,10 @@ The script validates these exist locally before upload.
 
 ## Next step
 
-Run the inner-loop Kubeflow pipeline:
+Compile and run the inner-loop Kubeflow pipeline from the workbench:
 
-```text
-pipelines/inner_loop/run_inner_loop_pipeline.ipynb
+```python
+!python pipelines/inner_loop/inner_loop_pipeline.py
 ```
 
-It references `s3://models/finetuned/custom/v1/` as the starting model path.
+Then upload `inner_loop_pipeline.yaml` in the Kubeflow Pipelines UI (or submit with the KFP client). It references `s3://models/finetuned/custom/v1/` as the starting model path.
