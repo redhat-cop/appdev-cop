@@ -8,24 +8,6 @@ from kfp import kubernetes
 
 BASE_IMAGE = "registry.access.redhat.com/ubi9/python-311:latest"
 
-REQUIRED_MODEL_FILES = [
-    "model-0001-of-0004.safetensors",
-    "model-0002-of-0004.safetensors",
-    "model-0003-of-0004.safetensors",
-    "model-0004-of-0004.safetensors",
-    "model.safetensors.index.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "special_tokens_map.json",
-    "added_token.json",
-    "merges.txt",
-    "chat_template.jinja",
-    "config.json",
-    "generation_config.json",
-    "training_args.bin",
-    "training_metadata.json",
-]
-
 
 @dsl.component(
     base_image=BASE_IMAGE,
@@ -35,7 +17,7 @@ def download_base_model(
     s3_prefix: str,
     model_dir: Output[Model],
 ) -> str:
-    """Download the base Hugging Face artifact from S3 into model_dir.path."""
+    """Download the custom VLLM artifact from S3 into model_dir.path."""
     import os
 
     import boto3
@@ -43,11 +25,11 @@ def download_base_model(
 
     aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    endpoint_url = os.environ.get("AWS_S3_ENDPOINT")
-    region_name = os.environ.get("AWS_DEFAULT_REGION")
-    bucket_name = os.environ.get("AWS_S3_BUCKET")
-
-    prefix = s3_prefix.strip("/") + "/"
+    endpoint_url = "http://s3-storage-open-s3-minio.apps.ocp.4txql.sandbox2112.opentlc.com" #os.environ.get("AWS_S3_ENDPOINT")
+    region_name = "us-east-1"
+    bucket_name = "models"
+    prefix = "finetuned/custom/v1/"
+    
     source_uri = f"s3://{bucket_name}/{prefix}"
     os.makedirs(model_dir.path, exist_ok=True)
 
@@ -79,16 +61,6 @@ def download_base_model(
     if downloaded == 0:
         raise FileNotFoundError(f"No objects found at {source_uri}")
 
-    missing = [
-        name for name in REQUIRED_MODEL_FILES
-        if not os.path.exists(os.path.join(model_dir.path, name))
-    ]
-    if missing:
-        raise FileNotFoundError(
-            f"Downloaded {downloaded} object(s) from {source_uri}, "
-            f"but required files are missing: {missing}"
-        )
-
     print(f"[download-base-model] Downloaded {downloaded} object(s) from {source_uri}")
     return source_uri
 
@@ -102,7 +74,7 @@ def download_base_model(
         "accelerate>=0.34.0",
     ],
 )
-def guardrail_fine_tuning(
+def guardrail_training(
     input_model: Input[Model],
     trained_model: Output[Model],
 ) -> str:
@@ -131,9 +103,9 @@ def guardrail_fine_tuning(
 
     metadata.update(
         {
-            "guardrail_fine_tuning": True,
+            "guardrail_training": True,
             "guardrail_dataset": "safety-injection-demo",
-            "fine_tuned_at": datetime.now(timezone.utc).isoformat(),
+            "guardrail_training_at": datetime.now(timezone.utc).isoformat(),
             "artifact_format": "huggingface-safetensors",
             "serving_runtime": "vllm",
         }
@@ -215,7 +187,7 @@ def export_guardrailed_model_to_s3(
     input_model: Input[Model],
     target_prefix: str,
 ) -> str:
-    """Upload the guardrailed Hugging Face artifact to persistent S3 storage."""
+    """ Upload the custom fine-tune artifact to persistent S3 storage."""
     import os
 
     import boto3
@@ -259,7 +231,7 @@ def export_guardrailed_model_to_s3(
 S3_SECRET_ENV = {
     "AWS_ACCESS_KEY_ID": "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY": "AWS_SECRET_ACCESS_KEY",
-    "AWS_DEFAULT_REGION": "AWS_DEFAULT_REGION",
+    "AWS_REGION": "AWS_DEFAULT_REGION",
     "AWS_S3_BUCKET": "AWS_S3_BUCKET",
     "AWS_S3_ENDPOINT": "AWS_S3_ENDPOINT",
 }
@@ -274,26 +246,26 @@ def pipeline(
     download_task = download_base_model(s3_prefix=s3_prefix)
     kubernetes.use_secret_as_env(
         task=download_task,
-        secret_name='my-storage',
+        secret_name='finetuned-storage',
         secret_key_to_env=S3_SECRET_ENV,
     )
 
-    fine_tune_task = guardrail_fine_tuning(
+    guardrail_task = guardrail_training(
         input_model=download_task.outputs["model_dir"],
     )
 
     validate_task = validate_guardrails(
-        input_model=fine_tune_task.outputs["trained_model"],
+        input_model=guardrail_task.outputs["trained_model"],
     )
 
     with dsl.If(validate_task.outputs['Output'] >= min_guardrail_score, name="guardrail-score-passed"):
         export_task = export_guardrailed_model_to_s3(
-            input_model=fine_tune_task.outputs["trained_model"],
+            input_model=guardrail_task.outputs["trained_model"],
             target_prefix=target_prefix,
         )
         kubernetes.use_secret_as_env(
             task=export_task,
-            secret_name='my-storage',
+            secret_name='guardrailed-storage',
             secret_key_to_env=S3_SECRET_ENV,
         )
 
