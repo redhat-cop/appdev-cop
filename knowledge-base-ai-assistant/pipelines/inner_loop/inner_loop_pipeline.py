@@ -286,7 +286,7 @@ def pipeline(
         input_model=fine_tune_task.outputs["trained_model"],
     )
 
-    with dsl.If(validate_task.output >= min_guardrail_score, name="guardrail-score-passed"):
+    with dsl.If(validate_task.outputs['Output'] >= min_guardrail_score, name="guardrail-score-passed"):
         export_task = export_guardrailed_model_to_s3(
             input_model=fine_tune_task.outputs["trained_model"],
             target_prefix=target_prefix,
