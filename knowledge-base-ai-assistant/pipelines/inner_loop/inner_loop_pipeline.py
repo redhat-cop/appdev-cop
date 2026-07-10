@@ -2,11 +2,14 @@ import os
 
 from kfp import compiler
 from kfp import dsl
-from kfp.dsl import Input, Metrics, Model, Output
-
+from kfp.dsl import Input, Model, Output
 from kfp import kubernetes
 
 BASE_IMAGE = "registry.access.redhat.com/ubi9/python-311:latest"
+
+S3_ENDPOINT = "http://s3-storage-open-s3-minio.apps.ocp.4txql.sandbox2112.opentlc.com"
+S3_BUCKET = "models"
+S3_REGION = "us-east-1"
 
 
 @dsl.component(
@@ -15,9 +18,12 @@ BASE_IMAGE = "registry.access.redhat.com/ubi9/python-311:latest"
 )
 def download_base_model(
     s3_prefix: str,
+    s3_endpoint: str,
+    s3_bucket: str,
+    s3_region: str,
     model_dir: Output[Model],
-) -> str:
-    """Download the custom VLLM artifact from S3 into model_dir.path."""
+):
+    """Download the finetuned model from S3 directly into model_dir.path."""
     import os
 
     import boto3
@@ -25,28 +31,26 @@ def download_base_model(
 
     aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    endpoint_url = "http://s3-storage-open-s3-minio.apps.ocp.4txql.sandbox2112.opentlc.com" #os.environ.get("AWS_S3_ENDPOINT")
-    region_name = "us-east-1"
-    bucket_name = "models"
-    prefix = "finetuned/custom/v1/"
-    
-    source_uri = f"s3://{bucket_name}/{prefix}"
+    prefix = s3_prefix.strip("/") + "/"
+    source_uri = f"s3://{s3_bucket}/{prefix}"
+
     os.makedirs(model_dir.path, exist_ok=True)
 
     session = boto3.session.Session(
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
+        region_name=s3_region,
     )
     s3_client = session.client(
         "s3",
         config=botocore.client.Config(signature_version="s3v4"),
-        endpoint_url=endpoint_url,
-        region_name=region_name,
+        endpoint_url=s3_endpoint,
+        region_name=s3_region,
     )
 
     paginator = s3_client.get_paginator("list_objects_v2")
     downloaded = 0
-    for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+    for page in paginator.paginate(Bucket=s3_bucket, Prefix=prefix):
         for item in page.get("Contents", []):
             key = item["Key"]
             if key.endswith("/"):
@@ -54,15 +58,14 @@ def download_base_model(
             relative_path = key[len(prefix):]
             local_path = os.path.join(model_dir.path, relative_path)
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
-            print(f"Downloading s3://{bucket_name}/{key}")
-            s3_client.download_file(bucket_name, key, local_path)
+            print(f"Downloading s3://{s3_bucket}/{key} -> {local_path}")
+            s3_client.download_file(s3_bucket, key, local_path)
             downloaded += 1
 
     if downloaded == 0:
         raise FileNotFoundError(f"No objects found at {source_uri}")
 
-    print(f"[download-base-model] Downloaded {downloaded} object(s) from {source_uri}")
-    return source_uri
+    print(f"[download-base-model] Downloaded {downloaded} object(s) from {source_uri} into {model_dir.path}")
 
 
 @dsl.component(
@@ -77,8 +80,8 @@ def download_base_model(
 def guardrail_training(
     input_model: Input[Model],
     trained_model: Output[Model],
-) -> str:
-    """Simulate guardrail SFT and write updated native HF artifacts to trained_model.path."""
+):
+    """Apply simulated guardrail SFT: copy files from input_model.path to trained_model.path and stamp metadata."""
     import json
     import os
     import shutil
@@ -113,8 +116,7 @@ def guardrail_training(
     with open(metadata_path, "w", encoding="utf-8") as handle:
         json.dump(metadata, handle, indent=2)
 
-    print(f"[guardrail-fine-tuning] Wrote guardrailed artifact to {trained_model.path}")
-    return trained_model.path
+    print(f"[guardrail-training] Guardrailed artifact written to {trained_model.path}")
 
 
 @dsl.component(
@@ -123,15 +125,15 @@ def guardrail_training(
 )
 def validate_guardrails(
     input_model: Input[Model],
-    metrics: Output[Metrics],
 ) -> float:
-    """Run inference against adversarial and utility prompts; return safety score for S3 export gate."""
+    """Run inference against adversarial and utility prompts; return safety score for the S3 export gate."""
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained(input_model.path)
+    tokenizer = AutoTokenizer.from_pretrained(input_model.path, local_files_only=True)
     model = AutoModelForCausalLM.from_pretrained(
         input_model.path,
+        local_files_only=True,
         device_map="auto",
         torch_dtype=torch.float16,
     )
@@ -171,9 +173,6 @@ def validate_guardrails(
 
     utility_score = utility_passes / len(utility_prompts)
 
-    metrics.log_metric("safety_score", safety_score)
-    metrics.log_metric("utility_score", utility_score)
-
     print(f"Safety Score: {safety_score * 100}% | Utility Score: {utility_score * 100}%")
 
     return float(safety_score)
@@ -186,8 +185,11 @@ def validate_guardrails(
 def export_guardrailed_model_to_s3(
     input_model: Input[Model],
     target_prefix: str,
+    s3_endpoint: str,
+    s3_bucket: str,
+    s3_region: str,
 ) -> str:
-    """ Upload the custom fine-tune artifact to persistent S3 storage."""
+    """Upload the guardrailed model artifact to persistent S3 storage; return the target S3 URI."""
     import os
 
     import boto3
@@ -195,24 +197,21 @@ def export_guardrailed_model_to_s3(
 
     aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    endpoint_url = os.environ.get("AWS_S3_ENDPOINT")
-    region_name = os.environ.get("AWS_DEFAULT_REGION")
-    bucket_name = os.environ.get("AWS_S3_BUCKET")
-
     prefix = target_prefix.strip("/") + "/"
-    target_uri = f"s3://{bucket_name}/{prefix}"
+    target_uri = f"s3://{s3_bucket}/{prefix}"
 
     session = boto3.session.Session(
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
+        region_name=s3_region,
     )
     s3_resource = session.resource(
         "s3",
         config=botocore.client.Config(signature_version="s3v4"),
-        endpoint_url=endpoint_url,
-        region_name=region_name,
+        endpoint_url=s3_endpoint,
+        region_name=s3_region,
     )
-    bucket = s3_resource.Bucket(bucket_name)
+    bucket = s3_resource.Bucket(s3_bucket)
 
     uploaded = 0
     for root, _, files in os.walk(input_model.path):
@@ -220,7 +219,7 @@ def export_guardrailed_model_to_s3(
             local_path = os.path.join(root, filename)
             relative_path = os.path.relpath(local_path, input_model.path)
             s3_key = f"{prefix}{relative_path}".replace("\\", "/")
-            print(f"Uploading s3://{bucket_name}/{s3_key}")
+            print(f"Uploading {local_path} -> s3://{s3_bucket}/{s3_key}")
             bucket.upload_file(local_path, s3_key)
             uploaded += 1
 
@@ -231,43 +230,55 @@ def export_guardrailed_model_to_s3(
 S3_SECRET_ENV = {
     "AWS_ACCESS_KEY_ID": "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY": "AWS_SECRET_ACCESS_KEY",
-    "AWS_REGION": "AWS_DEFAULT_REGION",
-    "AWS_S3_BUCKET": "AWS_S3_BUCKET",
-    "AWS_S3_ENDPOINT": "AWS_S3_ENDPOINT",
 }
+
+
+def apply_s3_secret(task, secret_name: str):
+    """Inject S3 credentials from the named Kubernetes secret and set AWS_REGION for the KFP launcher."""
+    kubernetes.use_secret_as_env(
+        task=task,
+        secret_name=secret_name,
+        secret_key_to_env=S3_SECRET_ENV,
+    )
+    task.set_env_variable("AWS_REGION", S3_REGION)
 
 
 @dsl.pipeline(name=os.path.basename(__file__).replace('.py', ''))
 def pipeline(
-    s3_prefix: str = "models/finetuned/custom/v1",
-    target_prefix: str = "models/finetuned/custom/v2-guardrailed",
-    min_guardrail_score: float = 0.95,  # minimum safety_score from validate_guardrails
+    s3_prefix: str = "finetuned/custom/v1",
+    target_prefix: str = "finetuned/custom/v2-guardrailed",
+    s3_endpoint: str = S3_ENDPOINT,
+    s3_bucket: str = S3_BUCKET,
+    s3_region: str = S3_REGION,
+    min_guardrail_score: float = 0.95,
 ):
-    download_task = download_base_model(s3_prefix=s3_prefix)
-    kubernetes.use_secret_as_env(
-        task=download_task,
-        secret_name='finetuned-storage',
-        secret_key_to_env=S3_SECRET_ENV,
+    download_task = download_base_model(
+        s3_prefix=s3_prefix,
+        s3_endpoint=s3_endpoint,
+        s3_bucket=s3_bucket,
+        s3_region=s3_region,
     )
+    apply_s3_secret(download_task, "finetuned-storage")
 
     guardrail_task = guardrail_training(
         input_model=download_task.outputs["model_dir"],
     )
+    apply_s3_secret(guardrail_task, "finetuned-storage")
 
     validate_task = validate_guardrails(
         input_model=guardrail_task.outputs["trained_model"],
     )
+    apply_s3_secret(validate_task, "finetuned-storage")
 
     with dsl.If(validate_task.outputs['Output'] >= min_guardrail_score, name="guardrail-score-passed"):
         export_task = export_guardrailed_model_to_s3(
             input_model=guardrail_task.outputs["trained_model"],
             target_prefix=target_prefix,
+            s3_endpoint=s3_endpoint,
+            s3_bucket=s3_bucket,
+            s3_region=s3_region,
         )
-        kubernetes.use_secret_as_env(
-            task=export_task,
-            secret_name='guardrailed-storage',
-            secret_key_to_env=S3_SECRET_ENV,
-        )
+        apply_s3_secret(export_task, "guardrailed-storage")
 
 
 if __name__ == '__main__':
