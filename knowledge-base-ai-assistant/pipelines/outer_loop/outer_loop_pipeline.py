@@ -36,34 +36,88 @@ def register_model_in_registry(
     registry_url: str,
     model_version: str,
 ) -> RegistryResult:
-    """Register a new model version in the OpenShift AI Model Registry."""
+    """Register a new model version in the OpenShift AI Model Registry.
+
+    Flow:
+      1. Find or create the RegisteredModel by name  -> get its numeric ID
+      2. Create a ModelVersion linked to that ID      -> get version ID
+      3. Create a ModelArtifact with the S3 URI       -> linked to version ID
+    """
     import requests
 
-    register_endpoint = registry_url.rstrip("/") + f"/api/model_registry/v1alpha3/registered_models/{model_name}/versions"
-    payload = {
-        "name": model_version,
-        "description": "Guardrailed Hugging Face artifact promoted by outer loop pipeline.",
-        "customProperties": {
-            "storage_uri": {"string_value": s3_uri},
-            "artifact_format": {"string_value": "huggingface-safetensors"},
-            "serving_runtime": {"string_value": "vllm"},
-        },
-    }
+    base = registry_url.rstrip("/") + "/api/model_registry/v1alpha3"
+    headers = {"Content-Type": "application/json"}
 
-    print(f"[model-registry] POST {register_endpoint}")
-    print(f"[model-registry] storage_uri={s3_uri}")
-
+    # --- Step 1: find or create the RegisteredModel ---
+    registered_model_id = None
     try:
-        response = requests.post(register_endpoint, json=payload, timeout=30)
-        if response.status_code >= 400:
-            print(
-                f"[model-registry] Registry API returned {response.status_code}: "
-                f"{response.text}. Continuing with mock registration metadata."
-            )
-        else:
-            print(f"[model-registry] Registered version response: {response.text}")
+        resp = requests.get(f"{base}/registered_models", headers=headers, timeout=30)
+        resp.raise_for_status()
+        for item in resp.json().get("items", []):
+            if item.get("name") == model_name:
+                registered_model_id = item["id"]
+                print(f"[model-registry] Found existing RegisteredModel id={registered_model_id}")
+                break
     except Exception as exc:
-        print(f"[model-registry] Registry API unavailable, using mock registration: {exc}")
+        print(f"[model-registry] Could not list registered models: {exc}")
+
+    if registered_model_id is None:
+        try:
+            resp = requests.post(
+                f"{base}/registered_models",
+                headers=headers,
+                json={"name": model_name, "description": "Knowledge-base LLM with guardrails"},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            registered_model_id = resp.json()["id"]
+            print(f"[model-registry] Created RegisteredModel id={registered_model_id}")
+        except Exception as exc:
+            print(f"[model-registry] Could not create RegisteredModel: {exc}. Skipping registration.")
+            return RegistryResult(model_name, model_version, s3_uri)
+
+    # --- Step 2: create ModelVersion ---
+    model_version_id = None
+    try:
+        resp = requests.post(
+            f"{base}/model_versions",
+            headers=headers,
+            json={
+                "name": model_version,
+                "description": "Guardrailed artifact promoted by outer loop pipeline.",
+                "registeredModelId": registered_model_id,
+                "customProperties": {
+                    "artifact_format": {"string_value": "huggingface-safetensors"},
+                    "serving_runtime": {"string_value": "vllm"},
+                },
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        model_version_id = resp.json()["id"]
+        print(f"[model-registry] Created ModelVersion id={model_version_id}")
+    except Exception as exc:
+        print(f"[model-registry] Could not create ModelVersion: {exc}. Skipping artifact registration.")
+        return RegistryResult(model_name, model_version, s3_uri)
+
+    # --- Step 3: create ModelArtifact with the S3 URI ---
+    try:
+        resp = requests.post(
+            f"{base}/model_versions/{model_version_id}/artifacts",
+            headers=headers,
+            json={
+                "name": f"{model_name}-{model_version}",
+                "artifactType": "model-artifact",
+                "uri": s3_uri,
+                "storageKey": "guardrailed-storage",
+                "storagePath": s3_uri.split("://", 1)[-1],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        print(f"[model-registry] Created ModelArtifact: {resp.json().get('id')}")
+    except Exception as exc:
+        print(f"[model-registry] Could not create ModelArtifact: {exc}")
 
     return RegistryResult(model_name, model_version, s3_uri)
 
@@ -214,7 +268,7 @@ def pipeline(
     model_name: str = "knowledge-base-llm",
     model_version: str = "v2-guardrailed",
     s3_uri: str = "s3://models/finetuned/custom/v2-guardrailed",
-    registry_url: str = "https://model-registry-service",
+    registry_url: str = "http://ai-assistant-model-registry.ai-assistant.svc.cluster.local:8080",
     deploy_namespace: str = "kubeflow-user-example-com",
     serving_runtime: str = "vllm",
     validation_prompt: str = "Summarize the product documentation in three bullet points.",
