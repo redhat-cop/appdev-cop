@@ -6,25 +6,6 @@ from kfp import dsl
 
 BASE_IMAGE = "registry.access.redhat.com/ubi9/python-311:latest"
 
-RegistryResult = NamedTuple(
-    "RegistryResult",
-    [
-        ("registered_model_name", str),
-        ("registered_model_version", str),
-        ("artifact_uri", str),
-    ],
-)
-
-DeploymentResult = NamedTuple(
-    "DeploymentResult",
-    [("deployment_name", str), ("endpoint_url", str)],
-)
-
-SmokeTestResult = NamedTuple(
-    "SmokeTestResult",
-    [("passed", bool), ("status_message", str)],
-)
-
 
 @dsl.component(
     base_image=BASE_IMAGE,
@@ -35,35 +16,100 @@ def register_model_in_registry(
     s3_uri: str,
     registry_url: str,
     model_version: str,
-) -> RegistryResult:
-    """Register a new model version in the OpenShift AI Model Registry."""
+) -> NamedTuple("RegistryResult", [
+    ("registered_model_name", str),
+    ("registered_model_version", str),
+    ("artifact_uri", str),
+]):
+    """Register a new model version in the OpenShift AI Model Registry.
+
+    Flow:
+      1. Find or create the RegisteredModel by name  -> get its numeric ID
+      2. Create a ModelVersion linked to that ID      -> get version ID
+      3. Create a ModelArtifact with the S3 URI       -> linked to version ID
+    """
+    from collections import namedtuple
+
     import requests
 
-    register_endpoint = registry_url.rstrip("/") + f"/api/model_registry/v1alpha3/registered_models/{model_name}/versions"
-    payload = {
-        "name": model_version,
-        "description": "Guardrailed Hugging Face artifact promoted by outer loop pipeline.",
-        "customProperties": {
-            "storage_uri": {"string_value": s3_uri},
-            "artifact_format": {"string_value": "huggingface-safetensors"},
-            "serving_runtime": {"string_value": "vllm"},
-        },
-    }
+    RegistryResult = namedtuple(
+        "RegistryResult",
+        ["registered_model_name", "registered_model_version", "artifact_uri"],
+    )
 
-    print(f"[model-registry] POST {register_endpoint}")
-    print(f"[model-registry] storage_uri={s3_uri}")
+    base = registry_url.rstrip("/") + "/api/model_registry/v1alpha3"
+    headers = {"Content-Type": "application/json"}
 
+    # --- Step 1: find or create the RegisteredModel ---
+    registered_model_id = None
     try:
-        response = requests.post(register_endpoint, json=payload, timeout=30)
-        if response.status_code >= 400:
-            print(
-                f"[model-registry] Registry API returned {response.status_code}: "
-                f"{response.text}. Continuing with mock registration metadata."
-            )
-        else:
-            print(f"[model-registry] Registered version response: {response.text}")
+        resp = requests.get(f"{base}/registered_models", headers=headers, timeout=30)
+        resp.raise_for_status()
+        for item in resp.json().get("items", []):
+            if item.get("name") == model_name:
+                registered_model_id = item["id"]
+                print(f"[model-registry] Found existing RegisteredModel id={registered_model_id}")
+                break
     except Exception as exc:
-        print(f"[model-registry] Registry API unavailable, using mock registration: {exc}")
+        print(f"[model-registry] Could not list registered models: {exc}")
+
+    if registered_model_id is None:
+        try:
+            resp = requests.post(
+                f"{base}/registered_models",
+                headers=headers,
+                json={"name": model_name, "description": "Knowledge-base LLM with guardrails"},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            registered_model_id = resp.json()["id"]
+            print(f"[model-registry] Created RegisteredModel id={registered_model_id}")
+        except Exception as exc:
+            print(f"[model-registry] Could not create RegisteredModel: {exc}. Skipping registration.")
+            return RegistryResult(model_name, model_version, s3_uri)
+
+    # --- Step 2: create ModelVersion ---
+    model_version_id = None
+    try:
+        resp = requests.post(
+            f"{base}/model_versions",
+            headers=headers,
+            json={
+                "name": model_version,
+                "description": "Guardrailed artifact promoted by outer loop pipeline.",
+                "registeredModelId": registered_model_id,
+                "customProperties": {
+                    "artifact_format": {"string_value": "huggingface-safetensors"},
+                    "serving_runtime": {"string_value": "vllm"},
+                },
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        model_version_id = resp.json()["id"]
+        print(f"[model-registry] Created ModelVersion id={model_version_id}")
+    except Exception as exc:
+        print(f"[model-registry] Could not create ModelVersion: {exc}. Skipping artifact registration.")
+        return RegistryResult(model_name, model_version, s3_uri)
+
+    # --- Step 3: create ModelArtifact with the S3 URI ---
+    try:
+        resp = requests.post(
+            f"{base}/model_versions/{model_version_id}/artifacts",
+            headers=headers,
+            json={
+                "name": f"{model_name}-{model_version}",
+                "artifactType": "model-artifact",
+                "uri": s3_uri,
+                "storageKey": "guardrailed-storage",
+                "storagePath": s3_uri.split("://", 1)[-1],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        print(f"[model-registry] Created ModelArtifact: {resp.json().get('id')}")
+    except Exception as exc:
+        print(f"[model-registry] Could not create ModelArtifact: {exc}")
 
     return RegistryResult(model_name, model_version, s3_uri)
 
@@ -77,10 +123,18 @@ def deploy_vllm_via_kserve(
     s3_uri: str,
     namespace: str,
     serving_runtime: str,
-) -> DeploymentResult:
+    storage_service_account: str,
+) -> NamedTuple("DeploymentResult", [
+    ("deployment_name", str),
+    ("endpoint_url", str),
+]):
     """Create or patch a KServe InferenceService configured for vLLM and S3 storage."""
+    from collections import namedtuple
+
     from kubernetes import client, config
     from kubernetes.client.rest import ApiException
+
+    DeploymentResult = namedtuple("DeploymentResult", ["deployment_name", "endpoint_url"])
 
     try:
         config.load_incluster_config()
@@ -103,11 +157,12 @@ def deploy_vllm_via_kserve(
         },
         "spec": {
             "predictor": {
+                "serviceAccountName": storage_service_account,
                 "model": {
                     "modelFormat": {"name": "huggingface"},
                     "storageUri": s3_uri,
                     "runtime": serving_runtime,
-                }
+                },
             }
         },
     }
@@ -135,7 +190,7 @@ def deploy_vllm_via_kserve(
         print(f"[deploy-vllm] Patched InferenceService {deployment_name} in {namespace}")
 
     endpoint_url = (
-        f"https://{deployment_name}.{namespace}.svc.cluster.local/v1/chat/completions"
+        f"http://{deployment_name}-predictor.{namespace}.svc.cluster.local:8080/v1/chat/completions"
     )
     print(f"[deploy-vllm] storageUri={s3_uri}, runtime={serving_runtime}")
     return DeploymentResult(deployment_name, endpoint_url)
@@ -151,13 +206,19 @@ def smoke_test_endpoint(
     namespace: str,
     validation_prompt: str,
     timeout_seconds: int,
-) -> SmokeTestResult:
+) -> NamedTuple("SmokeTestResult", [
+    ("passed", bool),
+    ("status_message", str),
+]):
     """Wait for InferenceService Ready, then call the vLLM OpenAI-compatible endpoint."""
     import time
+    from collections import namedtuple
 
     import requests
     from kubernetes import client, config
     from kubernetes.client.rest import ApiException
+
+    SmokeTestResult = namedtuple("SmokeTestResult", ["passed", "status_message"])
 
     try:
         config.load_incluster_config()
@@ -214,9 +275,10 @@ def pipeline(
     model_name: str = "knowledge-base-llm",
     model_version: str = "v2-guardrailed",
     s3_uri: str = "s3://models/finetuned/custom/v2-guardrailed",
-    registry_url: str = "https://model-registry-service",
-    deploy_namespace: str = "kubeflow-user-example-com",
-    serving_runtime: str = "vllm",
+    registry_url: str = "http://ai-assistant-model-registry.ai-assistant.svc.cluster.local:8080",
+    deploy_namespace: str = "ai-assistant",
+    serving_runtime: str = "vllm-runtime",
+    storage_service_account: str = "kserve-minio-sa",
     validation_prompt: str = "Summarize the product documentation in three bullet points.",
     smoke_test_timeout_seconds: int = 900,
 ):
@@ -232,6 +294,7 @@ def pipeline(
         s3_uri=s3_uri,
         namespace=deploy_namespace,
         serving_runtime=serving_runtime,
+        storage_service_account=storage_service_account,
     )
     deploy_task.after(register_task)
 
