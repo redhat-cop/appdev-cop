@@ -1,8 +1,5 @@
 # Knowledge Base AI Assistant
 
-> **This repository is part of the [Red Hat Community of Practice (CoP)](https://github.com/redhat-cop) and is maintained by the community.**
-> Contributions, issues, and feedback are welcome from anyone in the Red Hat ecosystem.
-
 [![Red Hat CoP](https://img.shields.io/badge/Red%20Hat-Community%20of%20Practice-EE0000?logo=redhat&logoColor=white)](https://github.com/redhat-cop)
 [![OpenShift AI](https://img.shields.io/badge/OpenShift%20AI-3.4-EE0000?logo=redhat&logoColor=white)](https://www.redhat.com/en/technologies/cloud-computing/openshift/openshift-ai)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -13,6 +10,9 @@
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-brightgreen)](https://opensource.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/redhat-cop/appdev-cop/pulls)
 [![GitHub Stars](https://img.shields.io/github/stars/redhat-cop/appdev-cop?style=social)](https://github.com/redhat-cop/appdev-cop)
+
+> **This repository is part of the [Red Hat Community of Practice (CoP)](https://github.com/redhat-cop) and is maintained by the community.**
+> Contributions, issues, and feedback are welcome from anyone in the Red Hat ecosystem.
 
 **Unlocking Your Company's Knowledge: Building an AI Assistant with OpenShift AI, SDG & MLOps Pipelines**
 
@@ -44,6 +44,8 @@ docs/PDFs  ──▶  Docling  ──▶  SDG  ──▶  Fine-tuning  ──▶
 ## Pre-Requirements
 
 Before running any step, ensure the following are in place on your OpenShift AI cluster.
+
+> **Don't have OpenShift AI yet?** [Get a 60-day trial here](https://www.redhat.com/en/products/ai/openshift-ai).
 
 ### OpenShift AI Components
 
