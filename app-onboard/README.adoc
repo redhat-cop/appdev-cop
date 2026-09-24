@@ -200,13 +200,16 @@ kubectl delete all -l app=sample-camel
 
 An Openshift cluster provisioned through the [Developer Sandbox for Red Hat OpenShift Red Hat Developer](https://developers.redhat.com/developer-sandbox) has been used to deploy the sample application. Another option would be to use https://developers.redhat.com/products/openshift-local/overview[Red Hat OpenShift Local] (free registration required) to spin up an Openshift cluster on your local machine.
 
-TIP: Openshift allows to spin up a cluster using Openshift, https://www.okd.io/[OKD], https://microshift.io/[MicroShift] or even http://podman.io/[Podman] - just use `crc config set preset okd; crc setup; crc start` for an OKD cluster.
+TIP: Openshift Local allows to spin up a cluster using Openshift, https://www.okd.io/[OKD], https://microshift.io/[MicroShift] or even http://podman.io/[Podman] - just use `crc config set preset okd; crc setup; crc start` for an OKD cluster.
 
 After logging in to the Openshift cluster, using `+oc login --token=sha256~sCgaV --server=https://api.sandbox-m2.openshiftapps.com:6443+` for example, the application is deployed much in the same way as in the plain kubernetes clusters described above. For example:
 
 ----
-mvn clean package oc:build oc:resource oc:apply -Popenshift
+mvn clean package oc:build oc:resource oc:apply -Popenshift -Djkube.build.switchToDeployment=true
 ----
+
+NOTE: OpenShift officially deprecates the usage of DeploymentConfigs in version 4.14 (see https://access.redhat.com/articles/7041372). To force `jkube` to use +Deployments+ instead of +DeploymentConfigs+ the `-Djkube.build.switchToDeployment=true` switch is used.
+
 
 Since Openshift provides an internal image registry the `openshift` profile in the `pom.xml` does not need to refer to any external registries. Another difference is that all of the build is taking place inside Openshift. If you follow the pod creation whilst the build running you will notice that a "build" pod is created for building the image and deployment is done through a "deploy" pod. But all of this is transparent and is handled by `jkube`.
 
