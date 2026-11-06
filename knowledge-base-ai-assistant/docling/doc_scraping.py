@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -69,6 +70,114 @@ def collect_documents(data_dir: Path) -> List[Path]:
     return documents
 
 
+# Dot leaders from PDF tables of contents, e.g. ". . . . . . CHAPTER 1".
+_DOT_LEADER = re.compile(r"(?:\s*\.\s*){4,}")
+_LEADING_DOT_LEADER = re.compile(r"^(?:\.\s*){2,}")
+_TRAILING_DOT_LEADER = re.compile(r"(?:\s*\.){2,}\s*$")
+_IMAGE_LINE = re.compile(r"^\s*<!--\s*image\s*-->\s*$", re.IGNORECASE)
+
+
+# Turn Docling's escaped slash back into a normal slash.
+def _unescape_markdown(text: str) -> str:
+    return text.replace("\\/", "/")
+
+
+# Remove dot leaders from one table cell and keep the real text.
+def _clean_table_cell(cell: str) -> str:
+    text = _unescape_markdown(cell)
+    has_leader = bool(
+        _DOT_LEADER.search(text)
+        or _LEADING_DOT_LEADER.match(text.strip())
+        or _TRAILING_DOT_LEADER.search(text)
+    )
+    if not has_leader:
+        return text.strip()
+
+    text = _DOT_LEADER.sub(" ", text)
+    text = text.strip()
+    text = _LEADING_DOT_LEADER.sub("", text)
+    text = _TRAILING_DOT_LEADER.sub("", text)
+    text = re.sub(r"[ \t]{2,}", " ", text).strip()
+    return text
+
+
+# Clean one Markdown table row. Leave ordinary rows unchanged.
+def _clean_table_row(line: str) -> str:
+    inner = line.strip()
+    body = inner[1:]
+    if body.endswith("|"):
+        body = body[:-1]
+
+    raw_cells = body.split("|")
+    cleaned_cells = [_clean_table_cell(cell) for cell in raw_cells]
+    original_cells = [_unescape_markdown(cell).strip() for cell in raw_cells]
+    if cleaned_cells == original_cells:
+        return _unescape_markdown(line).rstrip()
+    if not any(cleaned_cells):
+        return ""
+    return "| " + " | ".join(cleaned_cells) + " |"
+
+
+# Clean one non-table line. Drop image placeholders and dotted leader lines.
+def _clean_plain_line(line: str) -> str:
+    if _IMAGE_LINE.match(line):
+        return ""
+
+    text = _unescape_markdown(line)
+    if _DOT_LEADER.search(text):
+        text = _DOT_LEADER.sub(" ", text)
+        text = re.sub(r"[ \t]{2,}", " ", text)
+    if not text.strip(" \t."):
+        return ""
+    return text.rstrip()
+
+
+# Drop image placeholders and table-of-contents dot leaders from exported Markdown.
+def clean_markdown(md_text: str) -> str:
+    cleaned_lines = []
+    for line in md_text.splitlines():
+        if line.strip().startswith("|"):
+            cleaned_lines.append(_clean_table_row(line))
+        else:
+            cleaned_lines.append(_clean_plain_line(line))
+
+    text = "\n".join(cleaned_lines)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return text
+
+
+# Export Markdown, then apply the cleanup pass.
+def export_document_markdown(document) -> str:
+    try:
+        markdown = document.export_to_markdown(image_placeholder="")
+    except TypeError:
+        markdown = document.export_to_markdown()
+    return clean_markdown(markdown)
+
+
+# PDF table structure stays on. OCR stays off unless a scanned PDF needs it.
+def build_document_converter(do_ocr: bool = False) -> DocumentConverter:
+    try:
+        from docling.datamodel.base_models import InputFormat
+        from docling.datamodel.pipeline_options import PdfPipelineOptions
+        from docling.document_converter import PdfFormatOption
+    except ImportError:
+        return DocumentConverter()
+
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_ocr = do_ocr
+    pipeline_options.do_table_structure = True
+    table_options = getattr(pipeline_options, "table_structure_options", None)
+    if table_options is not None and hasattr(table_options, "do_cell_matching"):
+        table_options.do_cell_matching = True
+
+    return DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
+        }
+    )
+
+
 # Build the output Markdown path, preserving relative layout from data_dir.
 def resolve_output_path(
     src: Path,
@@ -85,16 +194,17 @@ def convert_to_markdown(
     inputs: List[Path],
     out_dir: Path,
     data_dir: Path,
+    do_ocr: bool = False,
 ) -> List[Dict[str, Any]]:
     out_dir.mkdir(parents=True, exist_ok=True)
-    conv = DocumentConverter()
+    conv = build_document_converter(do_ocr=do_ocr)
     results = []
 
     for src in inputs:
         src_display = str(src)
         try:
             res = conv.convert(src_display)
-            md = res.document.export_to_markdown()  # unified Markdown export
+            md = export_document_markdown(res.document)
             base = Path(res.input.file.stem if res.input.file else src.stem)
             md_path = resolve_output_path(src, out_dir, data_dir, base)
             md_path.parent.mkdir(parents=True, exist_ok=True)
@@ -206,14 +316,22 @@ def ingest(
         True,
         help="Build FAISS index after conversion",
     ),
+    ocr: bool = typer.Option(
+        False,
+        "--ocr/--no-ocr",
+        help="Run OCR for scanned PDFs. Leave this off for digital PDFs such as the OpenShift AI guide.",
+    ),
 ):
     sources = collect_documents(data_dir)
 
     if not sources:
         raise typer.Exit(code=1)
 
-    print(f"[blue]Converting {len(sources)} document(s) from {data_dir} → {out_dir}[/blue]")
-    meta = convert_to_markdown(sources, out_dir, data_dir)
+    print(
+        f"[blue]Converting {len(sources)} document(s) from {data_dir} → {out_dir}"
+        f" (PDF OCR {'on' if ocr else 'off'}, table structure on)[/blue]"
+    )
+    meta = convert_to_markdown(sources, out_dir, data_dir, do_ocr=ocr)
 
     if not meta:
         raise typer.Exit(code=1)
