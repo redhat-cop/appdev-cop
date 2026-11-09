@@ -73,6 +73,56 @@ class TestResolveOutputPath(unittest.TestCase):
         self.assertEqual(result, out_dir / "nested" / "doc.md")
 
 
+class TestCleanMarkdown(unittest.TestCase):
+    def test_drops_image_placeholder_and_keeps_surrounding_text(self):
+        raw = "# Title\n\n<!-- image -->\n\nHello world.\n"
+
+        cleaned = doc_scraping.clean_markdown(raw)
+
+        self.assertEqual(cleaned, "# Title\n\nHello world.")
+        self.assertNotIn("<!-- image -->", cleaned)
+
+    def test_collapses_toc_dot_leaders(self):
+        raw = (
+            "| . . . . . . . . CHAPTER 1. OVERVIEW                          "
+            "| . . . 3   |\n"
+            "| . . . . . . . . 1.1. DATA SCIENCE WORKFLOW                   "
+            "| . . . 3   |"
+        )
+
+        cleaned = doc_scraping.clean_markdown(raw)
+
+        self.assertEqual(
+            cleaned,
+            "| CHAPTER 1. OVERVIEW | 3 |\n| 1.1. DATA SCIENCE WORKFLOW | 3 |",
+        )
+
+    def test_drops_a_line_that_is_only_dot_leaders(self):
+        raw = "# Guide\n\n. . . . . . . . . . .\n\nOpenShift AI provides a platform."
+
+        cleaned = doc_scraping.clean_markdown(raw)
+
+        self.assertEqual(cleaned, "# Guide\n\nOpenShift AI provides a platform.")
+
+    def test_unescapes_slashes_and_keeps_normal_prose(self):
+        raw = "OpenShift AI provides a powerful AI\\/ML platform.\n\nSee section 1.1. for details."
+
+        cleaned = doc_scraping.clean_markdown(raw)
+
+        self.assertEqual(
+            cleaned,
+            "OpenShift AI provides a powerful AI/ML platform.\n\nSee section 1.1. for details.",
+        )
+
+    def test_leaves_an_ordinary_table_unchanged(self):
+        raw = "| Task | Owner |\n| --- | --- |\n| Train | Data scientist |"
+
+        self.assertEqual(doc_scraping.clean_markdown(raw), raw)
+
+    def test_leaves_plain_markdown_unchanged(self):
+        self.assertEqual(doc_scraping.clean_markdown("# Converted"), "# Converted")
+
+
 class TestChunkMarkdown(unittest.TestCase):
     def test_splits_long_text_into_multiple_chunks(self):
         text = "# Heading\n\n" + ("word " * 400)
@@ -106,7 +156,9 @@ class TestConvertToMarkdown(unittest.TestCase):
         source.write_text("# Sample", encoding="utf-8")
 
         mock_result = MagicMock()
-        mock_result.document.export_to_markdown.return_value = "# Converted"
+        mock_result.document.export_to_markdown.return_value = (
+            "# Converted\n\n<!-- image -->\n\nAI\\/ML platform."
+        )
         mock_result.input.file.stem = "sample"
         mock_converter_cls.return_value.convert.return_value = mock_result
 
@@ -115,8 +167,9 @@ class TestConvertToMarkdown(unittest.TestCase):
         self.assertEqual(len(results), 1)
         md_path = Path(results[0]["md_path"])
         self.assertTrue(md_path.exists())
-        self.assertEqual(md_path.read_text(encoding="utf-8"), "# Converted")
+        self.assertEqual(md_path.read_text(encoding="utf-8"), "# Converted\n\nAI/ML platform.")
         self.assertEqual(md_path, self.out_dir / "sample.md")
+        mock_result.document.export_to_markdown.assert_called_once_with(image_placeholder="")
 
     @patch("doc_scraping.DocumentConverter")
     def test_continues_after_conversion_failure(self, mock_converter_cls):
