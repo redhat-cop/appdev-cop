@@ -35,8 +35,11 @@ def _resolve_script_dir() -> Path:
 
 
 SCRIPT_DIR = _resolve_script_dir()
-DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "data"
-DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "out"
+# DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "data"
+DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "docling_data"
+# DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "out"
+# DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "output"
+DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "docling_out"
 
 SUPPORTED_EXTENSIONS = {
     ext.lower()
@@ -156,7 +159,9 @@ def export_document_markdown(document) -> str:
 
 
 # PDF table structure stays on. OCR stays off unless a scanned PDF needs it.
-def build_document_converter(do_ocr: bool = False) -> DocumentConverter:
+# def build_document_converter(do_ocr: bool = False) -> DocumentConverter:
+# PDF table structure stays on. OCR is on so text inside images and scans is read.
+def build_document_converter(do_ocr: bool = True) -> DocumentConverter:
     try:
         from docling.datamodel.base_models import InputFormat
         from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -194,9 +199,11 @@ def convert_to_markdown(
     inputs: List[Path],
     out_dir: Path,
     data_dir: Path,
-    do_ocr: bool = False,
+    # do_ocr: bool = False,
+    do_ocr: bool = True,
 ) -> List[Dict[str, Any]]:
     out_dir.mkdir(parents=True, exist_ok=True)
+    # conv = DocumentConverter()
     conv = build_document_converter(do_ocr=do_ocr)
     results = []
 
@@ -204,6 +211,7 @@ def convert_to_markdown(
         src_display = str(src)
         try:
             res = conv.convert(src_display)
+            # md = res.document.export_to_markdown()  # unified Markdown export
             md = export_document_markdown(res.document)
             base = Path(res.input.file.stem if res.input.file else src.stem)
             md_path = resolve_output_path(src, out_dir, data_dir, base)
@@ -306,20 +314,22 @@ def search(
 def ingest(
     data_dir: Path = typer.Option(
         DEFAULT_DATA_DIR,
-        help="Folder containing documents to convert",
+        help="Folder containing documents to convert (docling_data)",
     ),
     out_dir: Path = typer.Option(
         DEFAULT_OUT_DIR,
-        help="Folder where converted Markdown files are written",
+        help="Folder where converted Markdown files are written (docling_out)",
     ),
     build_index: bool = typer.Option(
         True,
         help="Build FAISS index after conversion",
     ),
     ocr: bool = typer.Option(
-        False,
+        # False,
+        True,
         "--ocr/--no-ocr",
-        help="Run OCR for scanned PDFs. Leave this off for digital PDFs such as the OpenShift AI guide.",
+        # help="Run OCR for scanned PDFs. Leave this off for digital PDFs such as the OpenShift AI guide.",
+        help="Read text inside images and scanned pages. On by default.",
     ),
 ):
     sources = collect_documents(data_dir)
