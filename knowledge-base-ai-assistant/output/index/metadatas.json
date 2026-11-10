@@ -1,0 +1,87 @@
+[
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/README.md",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/README.md",
+    "chunk_id": 0
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 0
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 1
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 2
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 3
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 4
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 5
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 6
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 7
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 8
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 9
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 10
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 11
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 12
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 13
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 14
+  },
+  {
+    "source": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/data/RHOAI.pdf",
+    "file": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/output/RHOAI.md",
+    "chunk_id": 15
+  }
+]
