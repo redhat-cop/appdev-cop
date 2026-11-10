@@ -36,7 +36,8 @@ def _resolve_script_dir() -> Path:
 
 SCRIPT_DIR = _resolve_script_dir()
 DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "data"
-DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "out"
+# DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "out"
+DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "output"
 
 SUPPORTED_EXTENSIONS = {
     ext.lower()
