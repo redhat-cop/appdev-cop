@@ -53,7 +53,12 @@ def memory_report() -> None:
             values[key] = rest.strip()
 
     for key in ("MemTotal", "MemAvailable", "MemFree", "SwapTotal", "SwapFree"):
-        print(f"{key}: {values.get(key, 'unknown')}")
+        raw = values.get(key)
+        if raw is None:
+            print(f"{key}: unknown")
+            continue
+        kib = int(raw.split()[0])
+        print(f"{key}: {kib / (1024 ** 2):.2f} GiB")
 
 
 def cuda_report() -> None:
