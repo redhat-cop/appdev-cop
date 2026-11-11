@@ -1,13 +1,55 @@
+import json
 import os
 import re
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from datasets import Dataset
 from sdg_hub import Flow, FlowRegistry
 
+
+def require_model_server(api_base: str, model_name: str) -> None:
+    """Stop before generation when the local vLLM server is down or serving another model."""
+    served_name = model_name.removeprefix("hosted_vllm/")
+    models_url = api_base.rstrip("/") + "/models"
+    request = urllib.request.Request(models_url, method="GET")
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            payload = json.load(response)
+    except urllib.error.URLError as exc:
+        raise SystemExit(
+            "Model has not started.\n"
+            "Start the model, wait until it is ready, then run this Python file again:\n"
+            "  python sdg_flow.py\n"
+            "\n"
+            "Start command:\n"
+            "  python -m vllm.entrypoints.openai.api_server \\\n"
+            f"    --model {served_name} --dtype bfloat16 \\\n"
+            "    --gpu-memory-utilization 0.85 --max-model-len 8192 \\\n"
+            "    --port 8000 --host 127.0.0.1\n"
+            f"Details: {exc}"
+        ) from exc
+
+    served_ids = [item.get("id") for item in payload.get("data", [])]
+    if served_name not in served_ids:
+        raise SystemExit(
+            "Model has not started.\n"
+            f"A server is running at {api_base}, but {served_name} is not loaded.\n"
+            "Start the model, wait until it is ready, then run this Python file again:\n"
+            "  python sdg_flow.py\n"
+            f"Served models: {served_ids or 'none'}"
+        )
+    print(f"vLLM is ready at {api_base} with model {served_name}")
+
 print("=========================================================")
 print("📦 RHOAI Native Flow Registry: Multi-Row Generation")
 print("=========================================================\n")
+
+# model_name = "hosted_vllm/ibm-granite/granite-3.0-8b-instruct"
+model_name = "hosted_vllm/ibm-granite/granite-4.2-8b"
+api_base = "http://127.0.0.1:8000/v1"
+require_model_server(api_base, model_name)
 
 # 1. Discover built-in workflows
 FlowRegistry.discover_flows()
@@ -23,9 +65,8 @@ flow = Flow.from_yaml(flow_path)
 
 # 3. Configure local vLLM engine
 flow.set_model_config(
-    # model="hosted_vllm/ibm-granite/granite-3.0-8b-instruct",
-    model="hosted_vllm/ibm-granite/granite-4.2-8b",
-    api_base="http://127.0.0.1:8000/v1",
+    model=model_name,
+    api_base=api_base,
     api_key="rhoai-local-token",
     max_tokens=512
 )
