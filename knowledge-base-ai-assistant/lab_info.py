@@ -56,7 +56,30 @@ def memory_report() -> None:
         print(f"{key}: {values.get(key, 'unknown')}")
 
 
+def cuda_report() -> None:
+    try:
+        import torch
+    except ImportError:
+        print("🔥 CUDA Availability: False")
+        print("🚀 Active GPU Name: unavailable (torch is not installed)")
+        print("📦 Total VRAM Available: unavailable")
+        return
+
+    available = torch.cuda.is_available()
+    print(f"🔥 CUDA Availability: {available}")
+    if not available:
+        print("🚀 Active GPU Name: none")
+        print("📦 Total VRAM Available: 0 GB")
+        return
+
+    total_gb = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
+    print(f"🚀 Active GPU Name: {torch.cuda.get_device_name(0)}")
+    print(f"📦 Total VRAM Available: {total_gb:.2f} GB")
+
+
 def gpu_report() -> None:
+    cuda_report()
+    print()
     summary = run(
         [
             "nvidia-smi",
