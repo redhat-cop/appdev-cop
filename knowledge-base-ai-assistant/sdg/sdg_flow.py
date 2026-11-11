@@ -24,10 +24,12 @@ def require_model_server(api_base: str, model_name: str) -> None:
             "  python sdg_flow.py\n"
             "\n"
             "Start command:\n"
+            "  pkill -f vllm\n"
+            "  export VLLM_USE_FLASHINFER_SAMPLER=0\n"
             "  python -m vllm.entrypoints.openai.api_server \\\n"
             f"    --model {served_name} --dtype bfloat16 \\\n"
-            "    --gpu-memory-utilization 0.85 --max-model-len 8192 \\\n"
-            "    --port 8000 --host 127.0.0.1\n"
+            "    --gpu-memory-utilization 0.85 \\\n"
+            "    --max-model-len 4096 --port 8000 --host 127.0.0.1\n"
             f"Details: {exc}"
         ) from exc
 
