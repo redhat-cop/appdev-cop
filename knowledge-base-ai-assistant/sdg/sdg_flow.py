@@ -13,13 +13,18 @@ print("=========================================================\n")
 FlowRegistry.discover_flows()
 
 # 2. Bind directly to the verified system flow template
-target_flow = "Document Based Knowledge Tuning Dataset Generation Flow"
-flow_path = FlowRegistry.get_flow_path(target_flow)
+# target_flow = "Document Based Knowledge Tuning Dataset Generation Flow"
+# flow_path = FlowRegistry.get_flow_path(target_flow)
+# The built-in flow's own default model is openai/gpt-oss-120b.
+# set_model_config below replaces that default with the local Granite server.
+target_flow = "stellar-peak-605"  # Document Based Knowledge Tuning
+flow_path = FlowRegistry.get_flow_path_safe(target_flow)
 flow = Flow.from_yaml(flow_path)
 
 # 3. Configure local vLLM engine
 flow.set_model_config(
-    model="hosted_vllm/ibm-granite/granite-3.0-8b-instruct",
+    # model="hosted_vllm/ibm-granite/granite-3.0-8b-instruct",
+    model="hosted_vllm/ibm-granite/granite-4.2-8b",
     api_base="http://127.0.0.1:8000/v1",
     api_key="rhoai-local-token",
     max_tokens=512
