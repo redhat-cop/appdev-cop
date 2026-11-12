@@ -24,6 +24,10 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 
+# Unsloth patches transformers and peft at import time. training_hub
+# imports those libraries, so Unsloth has to load first.
+import unsloth  # noqa: F401
+
 try:
     SCRIPT_DIR = Path(__file__).resolve().parent
 except NameError:
@@ -33,7 +37,9 @@ except NameError:
 model_id = "ibm-granite/granite-4.2-8b"
 # source_dataset = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/sdg/synthetic_training_data.jsonl"
 source_dataset = str(SCRIPT_DIR.parent / "sdg" / "synthetic_training_data.jsonl")
-output_dir = os.getenv("LOCAL_MODEL_PATH", "./granite-fine-tuned-checkpoints")
+# output_dir = os.getenv("LOCAL_MODEL_PATH", "./granite-fine-tuned-checkpoints")
+output_dir = str(SCRIPT_DIR / "lora-sft_output")
+os.makedirs(output_dir, exist_ok=True)
 
 endpoint_url = os.getenv("AWS_S3_ENDPOINT")
 access_key = os.getenv("AWS_ACCESS_KEY_ID")
@@ -120,7 +126,7 @@ def vllm_is_running(host: str = "127.0.0.1", port: int = 8000) -> bool:
 
 
 def write_messages_jsonl(raw_path: str, formatted_path: str) -> int:
-    """Turn SDG question/response rows into the messages JSONL OSFT expects."""
+    """Turn SDG question/response rows into the messages JSONL LoRA expects."""
     written = 0
     with open(raw_path, encoding="utf-8") as source, open(formatted_path, "w", encoding="utf-8") as output:
         for line in source:
@@ -162,7 +168,8 @@ if not os.path.exists(source_dataset):
         f"Missing training data: {source_dataset}. Run SDG first."
     )
 
-formatted_dataset = str(SCRIPT_DIR / "lora_training_data.jsonl")
+# formatted_dataset = str(SCRIPT_DIR / "lora_training_data.jsonl")
+formatted_dataset = str(Path(output_dir) / "lora_training_data.jsonl")
 kept = write_messages_jsonl(source_dataset, formatted_dataset)
 if kept == 0:
     raise ValueError(f"No question/answer rows found in {source_dataset}")
@@ -170,30 +177,8 @@ if kept == 0:
 print(f"Training data: {formatted_dataset} ({kept} rows)")
 print(f"Base model:    {model_id}")
 print(f"Local output:  {os.path.abspath(output_dir)}")
-print(f"S3 destination:{s3_uri}")
+# print(f"S3 destination:{s3_uri}")
 print("Algorithm:     LoRA + SFT, 4-bit, one GPU")
-
-# OSFT loaded the full model and crashed this L4. Kept here for reference.
-# from training_hub import osft
-# osft(
-#     model_path=model_id,
-#     data_path=formatted_dataset,
-#     ckpt_output_dir=output_dir,
-#     unfreeze_rank_ratio=0.25,
-#     effective_batch_size=1,
-#     max_tokens_per_gpu=512,
-#     max_seq_len=512,
-#     learning_rate=5e-6,
-#     num_epochs=1,
-#     unmask_messages=False,
-#     use_liger=False,
-#     nproc_per_node=1,
-#     nnodes=1,
-#     node_rank=0,
-#     rdzv_endpoint="127.0.0.1:29500",
-#     data_output_dir=str(SCRIPT_DIR / "osft_processed_data"),
-#     save_final_checkpoint=True,
-# )
 
 from training_hub import lora_sft
 
@@ -209,10 +194,12 @@ lora_sft(
     load_in_4bit=True,
 )
 
-upload_finetuned_artifact(output_dir)
+# Upload stays in this file. Turn it back on when the MinIO bucket is ready.
+# upload_finetuned_artifact(output_dir)
 
 print("\n=========================================================")
 print("LoRA fine-tuning complete.")
 print(f"Local artifact: {os.path.abspath(output_dir)}")
-print(f"S3 artifact:    {s3_uri}")
+# print(f"S3 artifact:    {s3_uri}")
+print("S3 upload is commented out until the bucket is ready.")
 print("=========================================================")
