@@ -170,10 +170,13 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8)
         raise ValueError(f"Flow '{target_flow}' not found in FlowRegistry.")
 
     flow = Flow.from_yaml(flow_path)
+    # The answer step in stellar-peak-605 asks for 4096 tokens.
+    # This vLLM server allows 4096 tokens total, so that request leaves no room for the prompt.
     flow.set_model_config(
         model=model_name,
         api_base=api_base,
         api_key=api_key,
+        max_tokens=1024,
     )
 
     print(f"Running '{target_flow}' on {len(input_df)} sections...")
