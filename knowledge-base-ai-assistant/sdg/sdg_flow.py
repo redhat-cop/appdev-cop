@@ -1,49 +1,177 @@
+import json
 import os
+import re
+import urllib.error
+import urllib.request
+from pathlib import Path
+
 from datasets import Dataset
 from sdg_hub import Flow, FlowRegistry
+
+
+def require_model_server(api_base: str, model_name: str) -> None:
+    """Stop before generation when the local vLLM server is down or serving another model."""
+    served_name = model_name.removeprefix("hosted_vllm/")
+    models_url = api_base.rstrip("/") + "/models"
+    request = urllib.request.Request(models_url, method="GET")
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            payload = json.load(response)
+    except urllib.error.URLError as exc:
+        raise SystemExit(
+            "Model has not started.\n"
+            "Start the model, wait until it is ready, then run this Python file again:\n"
+            "  python sdg_flow.py\n"
+            "\n"
+            "Start command:\n"
+            "  pkill -f vllm\n"
+            "  export VLLM_USE_FLASHINFER_SAMPLER=0\n"
+            "  python -m vllm.entrypoints.openai.api_server \\\n"
+            f"    --model {served_name} --dtype bfloat16 \\\n"
+            "    --gpu-memory-utilization 0.85 \\\n"
+            "    --max-model-len 4096 --port 8000 --host 127.0.0.1\n"
+            f"Details: {exc}"
+        ) from exc
+
+    served_ids = [item.get("id") for item in payload.get("data", [])]
+    if served_name not in served_ids:
+        raise SystemExit(
+            "Model has not started.\n"
+            f"A server is running at {api_base}, but {served_name} is not loaded.\n"
+            "Start the model, wait until it is ready, then run this Python file again:\n"
+            "  python sdg_flow.py\n"
+            f"Served models: {served_ids or 'none'}"
+        )
+    print(f"vLLM is ready at {api_base} with model {served_name}")
 
 print("=========================================================")
 print("📦 RHOAI Native Flow Registry: Multi-Row Generation")
 print("=========================================================\n")
 
+# model_name = "hosted_vllm/ibm-granite/granite-3.0-8b-instruct"
+model_name = "hosted_vllm/ibm-granite/granite-4.2-8b"
+api_base = "http://127.0.0.1:8000/v1"
+require_model_server(api_base, model_name)
+
 # 1. Discover built-in workflows
 FlowRegistry.discover_flows()
 
 # 2. Bind directly to the verified system flow template
-target_flow = "Document Based Knowledge Tuning Dataset Generation Flow"
-flow_path = FlowRegistry.get_flow_path(target_flow)
+# target_flow = "Document Based Knowledge Tuning Dataset Generation Flow"
+# flow_path = FlowRegistry.get_flow_path(target_flow)
+# The built-in flow's own default model is openai/gpt-oss-120b.
+# set_model_config below replaces that default with the local Granite server.
+target_flow = "stellar-peak-605"  # Document Based Knowledge Tuning
+flow_path = FlowRegistry.get_flow_path_safe(target_flow)
 flow = Flow.from_yaml(flow_path)
 
 # 3. Configure local vLLM engine
 flow.set_model_config(
-    model="hosted_vllm/ibm-granite/granite-3.0-8b-instruct",
-    api_base="http://127.0.0.1:8000/v1",
+    model=model_name,
+    api_base=api_base,
     api_key="rhoai-local-token",
     max_tokens=512
 )
 
 # 4. Ingest the clean Markdown text created by Docling
-context_file = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/out/RHOAI.md"
-if not os.path.exists(context_file):
-    raise FileNotFoundError(f"Missing context asset: {context_file}. Run Docling first!")
-
-with open(context_file, "r", encoding="utf-8") as f:
-    context_text = f.read()
-
+# context_file = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/out/RHOAI.md"
+# if not os.path.exists(context_file):
+#     raise FileNotFoundError(f"Missing context asset: {context_file}. Run Docling first!")
+#
+# with open(context_file, "r", encoding="utf-8") as f:
+#     context_text = f.read()
+#
 # =====================================================================
 # FIX: Chunk text into multiple sections to generate a multi-row dataset
 # =====================================================================
-chunk_size = 2500
-chunks = [context_text[i:i+chunk_size] for i in range(0, len(context_text), chunk_size)]
-chunks = chunks[:5]  # Cap at 5 rows to keep your live demo execution fast
+# chunk_size = 2500
+# chunks = [context_text[i:i+chunk_size] for i in range(0, len(context_text), chunk_size)]
+# chunks = chunks[:5]  # Cap at 5 rows to keep your live demo execution fast
+#
+# print(f"🧩 Split document into {len(chunks)} distinct segments for generation...")
 
-print(f"🧩 Split document into {len(chunks)} distinct segments for generation...")
+try:
+    SCRIPT_DIR = Path(__file__).resolve().parent
+except NameError:
+    SCRIPT_DIR = Path.cwd()
+
+DOCLING_OUT_DIR = SCRIPT_DIR.parent / "docling" / "docling_out"
+HEADING_LINE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+
+
+def is_table_of_contents(heading: str) -> bool:
+    normalized = re.sub(r"[^a-z]+", " ", heading.lower()).strip()
+    return normalized in {"table of contents", "contents", "toc"} or normalized.startswith(
+        "table of contents"
+    )
+
+
+def split_markdown_sections(markdown: str) -> list[tuple[str, str]]:
+    """Return (heading, section text) pairs. Text before the first heading is skipped."""
+    sections = []
+    heading = None
+    lines: list[str] = []
+
+    def save_current() -> None:
+        if heading is None:
+            return
+        body = "\n".join(lines[1:]).strip()
+        if not body or is_table_of_contents(heading):
+            return
+        sections.append((heading, "\n".join(lines).strip()))
+
+    for line in markdown.splitlines():
+        match = HEADING_LINE.match(line)
+        if match:
+            save_current()
+            heading = match.group(2).strip()
+            lines = [line]
+        elif heading is not None:
+            lines.append(line)
+
+    save_current()
+    return sections
+
+
+def load_docling_sections(docling_out_dir: Path) -> list[tuple[str, str, str]]:
+    if not docling_out_dir.is_dir():
+        raise FileNotFoundError(
+            f"Missing Docling output folder: {docling_out_dir}. Run Docling first!"
+        )
+
+    markdown_files = sorted(
+        path for path in docling_out_dir.rglob("*.md") if path.is_file()
+    )
+    if not markdown_files:
+        raise FileNotFoundError(
+            f"No Markdown files in {docling_out_dir}. Run Docling first!"
+        )
+
+    sections = []
+    for markdown_file in markdown_files:
+        text = markdown_file.read_text(encoding="utf-8")
+        for heading, section_text in split_markdown_sections(text):
+            sections.append((markdown_file.name, heading, section_text))
+    return sections
+
+
+print(f"Reading Docling Markdown from: {DOCLING_OUT_DIR}")
+sections = load_docling_sections(DOCLING_OUT_DIR)
+if not sections:
+    raise ValueError(
+        f"No content sections found in {DOCLING_OUT_DIR}. "
+        "The Markdown has no usable headings after the table of contents."
+    )
+print(f"Split Markdown into {len(sections)} section(s), skipping the table of contents...")
+for source_name, heading, _section_text in sections:
+    print(f"  - {source_name}: {heading}")
 
 raw_data = []
-for chunk in chunks:
+for _source_name, heading, section_text in sections:
     raw_data.append({
-        "document": chunk,
-        "document_outline": "Red Hat OpenShift AI Self-Managed Getting Started Guide.",
+        "document": section_text,
+        # "document_outline": "Red Hat OpenShift AI Self-Managed Getting Started Guide.",
+        "document_outline": heading,
         "domain": "Enterprise AI",
         "icl_document": "RedHat OpenShift AI 3.5",
         "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
