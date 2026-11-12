@@ -9,8 +9,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 
 print("=========================================================")
-# print("Training Hub fine-tune. MinIO upload matches fine_tune_model.py")
-print("LoRA + SFT fine-tune")
+print("Training Hub fine-tune")
 print("=========================================================\n")
 
 # =====================================================================
