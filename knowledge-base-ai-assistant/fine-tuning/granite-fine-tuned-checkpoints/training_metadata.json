@@ -1,0 +1,6 @@
+{
+  "base_model": "ibm-granite/granite-4.2-8b",
+  "source_dataset": "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/sdg/synthetic_training_data.jsonl",
+  "artifact_format": "lora_adapters",
+  "s3_destination": "s3://models/finetuned/custom/v1/"
+}
