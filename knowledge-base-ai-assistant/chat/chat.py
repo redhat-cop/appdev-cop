@@ -18,8 +18,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 # Paths to your fine-tuned folder and base tokenizer definitions
 # model_path = "./granite-fine-tuned-checkpoints"
-# model_path = str(SCRIPT_DIR.parent / "fine-tuning" / "lora-sft_output")
-model_path = str(SCRIPT_DIR.parent / "fine-tuning" / "granite-fine-tuned-checkpoints")
+model_path = str(SCRIPT_DIR.parent / "fine-tuning" / "lora-sft_output")
+# model_path = str(SCRIPT_DIR.parent / "fine-tuning" / "granite-fine-tuned-checkpoints")
 # base_model_id = "ibm-granite/granite-3.0-8b-instruct"
 base_model_id = "ibm-granite/granite-4.2-8b"
 
@@ -60,8 +60,12 @@ base_model = AutoModelForCausalLM.from_pretrained(
 model = PeftModel.from_pretrained(base_model, model_path, local_files_only=True)
 model.eval()
 
-# The same anchoring system prompt used during the training loop
-system_prompt = "You are a helpful corporate assistant grounded strictly in provided technical documentation."
+# system_prompt = "You are a helpful corporate assistant grounded strictly in provided technical documentation."
+system_prompt = (
+    "Answer from the OpenShift AI guide in one short reply. "
+    "If the guide does not contain the answer, reply exactly: "
+    "I don't know. Please ask based on the OpenShift AI guide."
+)
 
 print("\n🤖 Custom Granite Model is ready! Type 'exit' or 'quit' to stop.")
 print("=========================================================\n")

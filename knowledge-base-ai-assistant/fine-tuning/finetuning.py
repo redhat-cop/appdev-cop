@@ -38,6 +38,7 @@ model_id = "ibm-granite/granite-4.2-8b"
 # source_dataset = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/sdg/synthetic_training_data.jsonl"
 # source_dataset = str(SCRIPT_DIR.parent / "sdg" / "synthetic_training_data.jsonl")
 source_dataset = str(SCRIPT_DIR.parent / "sdg" / "sdg_out" / "synthetic_training_data.jsonl")
+# source_dataset = str(SCRIPT_DIR.parent / "sdg" / "sdg_out" / "stellar_peak_raw.jsonl")
 # output_dir = os.getenv("LOCAL_MODEL_PATH", "./granite-fine-tuned-checkpoints")
 output_dir = str(SCRIPT_DIR / "lora-sft_output")
 os.makedirs(output_dir, exist_ok=True)
@@ -132,40 +133,81 @@ def vllm_is_running(host: str = "127.0.0.1", port: int = 8000) -> bool:
         return sock.connect_ex((host, port)) == 0
 
 
+def clean_question(text: str) -> str:
+    """Keep the question itself when the SDG row also saved the model's scratch text."""
+    if "[QUESTION]" in text:
+        text = text.split("[QUESTION]")[-1]
+    if "[END]" in text:
+        text = text.split("[END]")[0]
+    if "</think>" in text:
+        text = text.split("</think>")[-1]
+    return " ".join(text.split())
+
+
+UNKNOWN_ANSWER = "I don't know. Please ask based on the OpenShift AI guide."
+SYSTEM_PROMPT = (
+    "Answer from the OpenShift AI guide in one short reply. "
+    "If the guide does not contain the answer, reply exactly: "
+    + UNKNOWN_ANSWER
+)
+# SYSTEM_PROMPT = "You are a helpful corporate assistant grounded strictly in provided technical documentation."
+
+UNKNOWN_QUESTIONS = [
+    "What is the weather today?",
+    "How do I bake an apple pie?",
+    "Who won the world cup?",
+    "What is the capital of France?",
+]
+
+
+def answer_text(text: str) -> str:
+    """Drop the scratch reasoning and keep the answer from the training dataset."""
+    if "</think>" in text:
+        text = text.split("</think>", 1)[-1]
+    kept = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("\\boxed{") or stripped.startswith(r"\boxed{"):
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip()
+
+
 def write_messages_jsonl(raw_path: str, formatted_path: str) -> int:
-    """Turn SDG question/response rows into the messages JSONL LoRA expects."""
+    """Read the training dataset, keep each question and answer, and add a few 'I don't know' rows."""
     written = 0
     with open(raw_path, encoding="utf-8") as source, open(formatted_path, "w", encoding="utf-8") as output:
+        def write_pair(question: str, answer: str) -> None:
+            nonlocal written
+            record = {
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": question},
+                    {"role": "assistant", "content": answer},
+                ]
+            }
+            output.write(json.dumps(record) + "\n")
+            written += 1
+
         for line in source:
             line = line.strip()
             if not line:
                 continue
             row = json.loads(line)
             if isinstance(row.get("messages"), list) and row["messages"]:
-                output.write(json.dumps({"messages": row["messages"]}) + "\n")
-                written += 1
+                question = next((item.get("content", "") for item in row["messages"] if item.get("role") == "user"), "")
+                answer = next((item.get("content", "") for item in row["messages"] if item.get("role") == "assistant"), "")
+            else:
+                question = row.get("question") or row.get("instruction") or row.get("query") or ""
+                answer = row.get("response") or row.get("answer") or ""
+            question = clean_question(str(question))
+            answer = answer_text(str(answer))
+            if len(question) < 12 or question in {"...", "...\\n"} or not answer:
                 continue
-            question = row.get("question") or row.get("instruction") or row.get("query")
-            answer = row.get("answer") or row.get("response")
-            context = row.get("document") or row.get("context") or ""
-            if not question or not answer:
-                continue
-            record = {
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a helpful corporate assistant grounded strictly in provided technical documentation.",
-                    },
-                    {
-                        "role": "user",
-                        # "content": f"Context:\n{context}\n\nQuestion: {question}",
-                        "content": question,
-                    },
-                    {"role": "assistant", "content": answer},
-                ]
-            }
-            output.write(json.dumps(record) + "\n")
-            written += 1
+            write_pair(question, answer)
+
+        for question in UNKNOWN_QUESTIONS:
+            write_pair(question, UNKNOWN_ANSWER)
     return written
 
 
@@ -203,8 +245,8 @@ lora_sft(
     ckpt_output_dir=output_dir,
     lora_r=16,
     lora_alpha=32,
-    # num_epochs=3,
-    num_epochs=1,
+    # num_epochs=1,
+    num_epochs=3,
     learning_rate=2e-4,
     load_in_4bit=True,
 )
