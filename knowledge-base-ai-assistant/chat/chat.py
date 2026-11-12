@@ -18,7 +18,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 # Paths to your fine-tuned folder and base tokenizer definitions
 # model_path = "./granite-fine-tuned-checkpoints"
-model_path = str(SCRIPT_DIR.parent / "fine-tuning" / "lora-sft_output")
+# model_path = str(SCRIPT_DIR.parent / "fine-tuning" / "lora-sft_output")
+model_path = str(SCRIPT_DIR.parent / "fine-tuning" / "granite-fine-tuned-checkpoints")
 # base_model_id = "ibm-granite/granite-3.0-8b-instruct"
 base_model_id = "ibm-granite/granite-4.2-8b"
 
