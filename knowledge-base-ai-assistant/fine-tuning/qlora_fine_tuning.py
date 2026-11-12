@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+from pathlib import Path
 from boto3 import client
 from botocore.config import Config
 
@@ -19,7 +20,8 @@ os.environ["TRANSFORMERS_OFFLINE"] = "1"
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-source_dataset = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/sdg/synthetic_training_data.jsonl"
+# source_dataset = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/sdg/synthetic_training_data.jsonl"
+source_dataset = str(Path(__file__).resolve().parent.parent / "sdg" / "sdg_out" / "synthetic_training_data.jsonl")
 formatted_dataset_path = "./formatted_training_data.jsonl"
 output_dir = os.getenv("LOCAL_MODEL_PATH", "./granite-fine-tuned-checkpoints")
 
@@ -97,6 +99,9 @@ print(f"🔧 Restructuring text records into chat-formatted system blocks...")
 with open(formatted_dataset_path, "w", encoding="utf-8") as out_f:
     for line in lines:
         row = json.loads(line)
+        if isinstance(row.get("messages"), list) and row["messages"]:
+            out_f.write(json.dumps({"messages": row["messages"]}) + "\n")
+            continue
         question = row.get("question") or row.get("instruction") or row.get("query")
         answer = row.get("answer") or row.get("response")
         context = row.get("document") or row.get("context") or ""
@@ -109,8 +114,9 @@ with open(formatted_dataset_path, "w", encoding="utf-8") as out_f:
                         "content": "You are a helpful corporate assistant grounded strictly in provided technical documentation."
                     },
                     {
-                        "role": "user", 
-                        "content": f"Context:\n{context}\n\nQuestion: {question}"
+                        "role": "user",
+                        # "content": f"Context:\n{context}\n\nQuestion: {question}"
+                        "content": question
                     },
                     {
                         "role": "assistant", 

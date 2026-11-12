@@ -5,7 +5,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from datasets import Dataset
+import pandas as pd
 from sdg_hub import Flow, FlowRegistry
 
 
@@ -48,30 +48,15 @@ print("=========================================================")
 print("📦 RHOAI Native Flow Registry: Multi-Row Generation")
 print("=========================================================\n")
 
+# ==============================================================================
+# Configuration
+# ==============================================================================
 # model_name = "hosted_vllm/ibm-granite/granite-3.0-8b-instruct"
 model_name = "hosted_vllm/ibm-granite/granite-4.2-8b"
 api_base = "http://127.0.0.1:8000/v1"
-require_model_server(api_base, model_name)
-
-# 1. Discover built-in workflows
-FlowRegistry.discover_flows()
-
-# 2. Bind directly to the verified system flow template
-# target_flow = "Document Based Knowledge Tuning Dataset Generation Flow"
-# flow_path = FlowRegistry.get_flow_path(target_flow)
-# The built-in flow's own default model is openai/gpt-oss-120b.
-# set_model_config below replaces that default with the local Granite server.
+api_key = "rhoai-local-token"
+# api_key = os.getenv("VLLM_API_KEY", "EMPTY")
 target_flow = "stellar-peak-605"  # Document Based Knowledge Tuning
-flow_path = FlowRegistry.get_flow_path_safe(target_flow)
-flow = Flow.from_yaml(flow_path)
-
-# 3. Configure local vLLM engine
-flow.set_model_config(
-    model=model_name,
-    api_base=api_base,
-    api_key="rhoai-local-token",
-    max_tokens=512
-)
 
 # 4. Ingest the clean Markdown text created by Docling
 # context_file = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/out/RHOAI.md"
@@ -96,6 +81,10 @@ except NameError:
     SCRIPT_DIR = Path.cwd()
 
 DOCLING_OUT_DIR = SCRIPT_DIR.parent / "docling" / "docling_out"
+# RAW_OUTPUT_PATH = Path("sdg_out/stellar_peak_raw.jsonl")
+# TRAIN_OUTPUT_PATH = Path("sdg_out/synthetic_training_data.jsonl")
+RAW_OUTPUT_PATH = SCRIPT_DIR / "sdg_out" / "stellar_peak_raw.jsonl"
+TRAIN_OUTPUT_PATH = SCRIPT_DIR / "sdg_out" / "synthetic_training_data.jsonl"
 HEADING_LINE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 
 
@@ -155,42 +144,74 @@ def load_docling_sections(docling_out_dir: Path) -> list[tuple[str, str, str]]:
     return sections
 
 
-print(f"Reading Docling Markdown from: {DOCLING_OUT_DIR}")
-sections = load_docling_sections(DOCLING_OUT_DIR)
-if not sections:
-    raise ValueError(
-        f"No content sections found in {DOCLING_OUT_DIR}. "
-        "The Markdown has no usable headings after the table of contents."
+def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8) -> pd.DataFrame:
+    """Run stellar-peak-605 on Docling sections and write the raw and training files."""
+    raw_data = []
+    for _source_name, heading, section_text in sections:
+        raw_data.append({
+            "document": section_text,
+            # "document_outline": "Red Hat OpenShift AI Self-Managed Getting Started Guide.",
+            "document_outline": heading,
+            "domain": "Enterprise AI",
+            "icl_document": "RedHat OpenShift AI 3.5",
+            "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
+            "icl_query_2": "How do I set up a project and workbench?",
+            "icl_query_3": "Explain the difference between model serving and AI pipelines.",
+            "icl_query_4": "How do connections help with Object Storage?",
+            "icl_query_5": "How do workbenches help with model development and training?",
+        })
+
+    input_df = pd.DataFrame(raw_data)
+
+    FlowRegistry.discover_flows()
+    # flow_path = FlowRegistry.get_flow_path(target_flow)
+    flow_path = FlowRegistry.get_flow_path_safe(target_flow)
+    if not flow_path:
+        raise ValueError(f"Flow '{target_flow}' not found in FlowRegistry.")
+
+    flow = Flow.from_yaml(flow_path)
+    flow.set_model_config(
+        model=model_name,
+        api_base=api_base,
+        api_key=api_key,
     )
-print(f"Split Markdown into {len(sections)} section(s), skipping the table of contents...")
-for source_name, heading, _section_text in sections:
-    print(f"  - {source_name}: {heading}")
 
-raw_data = []
-for _source_name, heading, section_text in sections:
-    raw_data.append({
-        "document": section_text,
-        # "document_outline": "Red Hat OpenShift AI Self-Managed Getting Started Guide.",
-        "document_outline": heading,
-        "domain": "Enterprise AI",
-        "icl_document": "RedHat OpenShift AI 3.5",
-        "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
-        "icl_query_2": "How do I set up a project and workbench?",
-        "icl_query_3": "Explain the difference between model serving and AI pipelines.",
-        "icl_query_4": "How do connections help with Object Storage?",
-        "icl_query_5": "How do workbenches help with model development and training?"
-    })
+    print(f"Running '{target_flow}' on {len(input_df)} sections...")
+    result_df = flow.generate(input_df, max_concurrency=max_concurrency)
 
-dataset = Dataset.from_list(raw_data)
+    RAW_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    result_df.to_json(RAW_OUTPUT_PATH, orient="records", lines=True, force_ascii=False)
+    print(f"Saved {len(result_df)} raw rows -> {RAW_OUTPUT_PATH}")
 
-print("\n🚀 Passing chunks to the Granite 8B engine via Flow execution...")
-result_dataset = flow.generate(dataset)
+    exported = 0
+    with TRAIN_OUTPUT_PATH.open("w", encoding="utf-8") as handle:
+        for _, row in result_df.iterrows():
+            question = row.get("question") or row.get("query") or row.get("instruction")
+            answer = row.get("response") or row.get("answer") or row.get("output")
+            if pd.notna(question) and pd.notna(answer) and str(question).strip() and str(answer).strip():
+                record = {
+                    "messages": [
+                        {"role": "user", "content": str(question).strip()},
+                        {"role": "assistant", "content": str(answer).strip()},
+                    ]
+                }
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+                exported += 1
 
-# 5. Output the multi-row dataset for Training Hub ingestion
-output_file = "synthetic_training_data.jsonl"
-result_dataset.to_json(output_file)
+    print(f"Exported {exported} training pairs -> {TRAIN_OUTPUT_PATH}")
+    return result_df
 
-print("\n=========================================================")
-print(f"🎉 SUCCESS! Native SDG Flow execution complete.")
-print(f"💾 Multi-row dataset compiled: {os.path.abspath(output_file)}")
-print("=========================================================")
+
+if __name__ == "__main__":
+    require_model_server(api_base, model_name)
+    print(f"Reading Docling Markdown from: {DOCLING_OUT_DIR}")
+    sections = load_docling_sections(DOCLING_OUT_DIR)
+    if not sections:
+        raise ValueError(
+            f"No content sections found in {DOCLING_OUT_DIR}. "
+            "The Markdown has no usable headings after the table of contents."
+        )
+    print(f"Split Markdown into {len(sections)} section(s), skipping the table of contents...")
+    for source_name, heading, _section_text in sections:
+        print(f"  - {source_name}: {heading}")
+    run_sdg_flow(sections)
