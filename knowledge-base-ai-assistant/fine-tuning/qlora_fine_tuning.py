@@ -35,7 +35,8 @@ upload_to_s3 = os.getenv("UPLOAD_TO_S3", "true").lower() in {"1", "true", "yes"}
 # 2. DYNAMIC DEEP SNAPSHOT PATH RESOLUTION
 # =====================================================================
 print("🔍 Resolving the exact nested snapshot folder...")
-base_repo_dir = "/opt/app-root/src/.cache/huggingface/hub/models--ibm-granite--granite-3.0-8b-instruct"
+# base_repo_dir = "/opt/app-root/src/.cache/huggingface/hub/models--ibm-granite--granite-3.0-8b-instruct"
+base_repo_dir = "/opt/app-root/src/.cache/huggingface/hub/models--ibm-granite--granite-4.2-8b"
 snapshots_dir = os.path.join(base_repo_dir, "snapshots")
 
 if not os.path.exists(snapshots_dir):
@@ -60,26 +61,27 @@ print(f"🎯 Path Resolved! Target snapshot folder is:\n   ↳ {model_id}\n")
 # =====================================================================
 # 3. FIX FOR FLEX_ATTENTION DROPOUT BUG IN GRANITE 3.0
 # =====================================================================
-config_path = os.path.join(model_id, "config.json")
-if os.path.exists(config_path):
-    print("🛠️ Applying local fix: disabling attention dropout in config.json to satisfy flex_attention...")
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            config_data = json.load(f)
-        
-        # Disable all potential attention and layer dropout fields to satisfy the backend
-        config_data["attention_dropout"] = 0.0
-        config_data["attention_probs_dropout_prob"] = 0.0
-        config_data["dropout"] = 0.0
-        
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(config_data, f, indent=2)
-        print("✅ config.json successfully patched! attention_dropout set to 0.0.\n")
-    except Exception as e:
-        print(f"⚠️ Warning: Could not patch config.json: {e}\n")
-else:
-    print(f"❌ Error: 'config.json' was not found in {model_id}")
-    sys.exit(1)
+# Granite 3.0 only. Granite 4.2 does not use this patch.
+# config_path = os.path.join(model_id, "config.json")
+# if os.path.exists(config_path):
+#     print("🛠️ Applying local fix: disabling attention dropout in config.json to satisfy flex_attention...")
+#     try:
+#         with open(config_path, "r", encoding="utf-8") as f:
+#             config_data = json.load(f)
+#
+#         # Disable all potential attention and layer dropout fields to satisfy the backend
+#         config_data["attention_dropout"] = 0.0
+#         config_data["attention_probs_dropout_prob"] = 0.0
+#         config_data["dropout"] = 0.0
+#
+#         with open(config_path, "w", encoding="utf-8") as f:
+#             json.dump(config_data, f, indent=2)
+#         print("✅ config.json successfully patched! attention_dropout set to 0.0.\n")
+#     except Exception as e:
+#         print(f"⚠️ Warning: Could not patch config.json: {e}\n")
+# else:
+#     print(f"❌ Error: 'config.json' was not found in {model_id}")
+#     sys.exit(1)
 
 # =====================================================================
 # 4. DATA PREPROCESSING & SCHEMA ALIGNMENT
@@ -142,7 +144,8 @@ print("\n💾 Training complete. Checking compiled adapter outputs...")
 # 6. VERIFY ARTIFACT INTEGRITY
 # =====================================================================
 metadata = {
-    "base_model": "ibm-granite/granite-3.0-8b-instruct",
+    # "base_model": "ibm-granite/granite-3.0-8b-instruct",
+    "base_model": "ibm-granite/granite-4.2-8b",
     "source_dataset": source_dataset,
     "artifact_format": "lora_adapters",
     "s3_destination": s3_uri,
