@@ -9,13 +9,14 @@ from botocore.config import Config
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 
 print("=========================================================")
-print("Training Hub fine-tune. MinIO upload matches fine_tune_model.py")
+# print("Training Hub fine-tune. MinIO upload matches fine_tune_model.py")
+print("LoRA + SFT fine-tune")
 print("=========================================================\n")
 
 # =====================================================================
 # 1. ENVIRONMENT SECURITY, S3 CONFIG & STABILITY BOUNDARIES
-# Kept from fine_tune_model.py. The inner-loop pipeline reads this S3 path.
 # =====================================================================
+# The inner-loop pipeline reads this S3 path.
 os.environ["HF_DATASETS_OFFLINE"] = "1"
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 os.environ["HF_HUB_OFFLINE"] = "1"
@@ -57,8 +58,11 @@ print(f"  - S3_PREFIX:          '{s3_prefix}'")
 print(f"  - UPLOAD_TO_S3:       {upload_to_s3}\n")
 
 
+# =====================================================================
+# 2. MINIO UPLOAD
+# =====================================================================
 def upload_finetuned_artifact(local_dir: str) -> None:
-    """Upload every file in the checkpoint folder to MinIO. Same behavior as fine_tune_model.py."""
+    """Upload every file in the checkpoint folder to MinIO."""
     if not upload_to_s3:
         print("\nSkipping S3 upload because UPLOAD_TO_S3=false")
         return
@@ -119,6 +123,9 @@ def upload_finetuned_artifact(local_dir: str) -> None:
         sys.exit(1)
 
 
+# =====================================================================
+# 3. TRAINING DATA
+# =====================================================================
 def vllm_is_running(host: str = "127.0.0.1", port: int = 8000) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(1)
@@ -180,6 +187,9 @@ print(f"Local output:  {os.path.abspath(output_dir)}")
 # print(f"S3 destination:{s3_uri}")
 print("Algorithm:     LoRA + SFT, 4-bit, one GPU")
 
+# =====================================================================
+# 4. LORA + SFT
+# =====================================================================
 from training_hub import lora_sft
 
 lora_sft(
@@ -194,6 +204,9 @@ lora_sft(
     load_in_4bit=True,
 )
 
+# =====================================================================
+# 5. LOCAL OUTPUT
+# =====================================================================
 # Upload stays in this file. Turn it back on when the MinIO bucket is ready.
 # upload_finetuned_artifact(output_dir)
 
