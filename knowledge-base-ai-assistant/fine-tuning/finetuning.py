@@ -162,7 +162,7 @@ if not os.path.exists(source_dataset):
         f"Missing training data: {source_dataset}. Run SDG first."
     )
 
-formatted_dataset = str(SCRIPT_DIR / "osft_training_data.jsonl")
+formatted_dataset = str(SCRIPT_DIR / "lora_training_data.jsonl")
 kept = write_messages_jsonl(source_dataset, formatted_dataset)
 if kept == 0:
     raise ValueError(f"No question/answer rows found in {source_dataset}")
@@ -171,41 +171,48 @@ print(f"Training data: {formatted_dataset} ({kept} rows)")
 print(f"Base model:    {model_id}")
 print(f"Local output:  {os.path.abspath(output_dir)}")
 print(f"S3 destination:{s3_uri}")
-print("Algorithm:     OSFT, one machine, one GPU")
+print("Algorithm:     LoRA + SFT, 4-bit, one GPU")
 
-# README sample uses effective_batch_size=16 and max_tokens_per_gpu=2048.
-# Those sizes are for a larger machine. This L4 gets one sample at a time.
-from training_hub import osft
+# OSFT loaded the full model and crashed this L4. Kept here for reference.
+# from training_hub import osft
+# osft(
+#     model_path=model_id,
+#     data_path=formatted_dataset,
+#     ckpt_output_dir=output_dir,
+#     unfreeze_rank_ratio=0.25,
+#     effective_batch_size=1,
+#     max_tokens_per_gpu=512,
+#     max_seq_len=512,
+#     learning_rate=5e-6,
+#     num_epochs=1,
+#     unmask_messages=False,
+#     use_liger=False,
+#     nproc_per_node=1,
+#     nnodes=1,
+#     node_rank=0,
+#     rdzv_endpoint="127.0.0.1:29500",
+#     data_output_dir=str(SCRIPT_DIR / "osft_processed_data"),
+#     save_final_checkpoint=True,
+# )
 
-try:
-    osft(
-        model_path=model_id,
-        data_path=formatted_dataset,
-        ckpt_output_dir=output_dir,
-        unfreeze_rank_ratio=0.25,
-        effective_batch_size=1,
-        max_tokens_per_gpu=512,
-        max_seq_len=512,
-        learning_rate=5e-6,
-        num_epochs=1,
-        unmask_messages=False,
-        use_liger=False,
-        nproc_per_node=1,
-        nnodes=1,
-        node_rank=0,
-        rdzv_endpoint="127.0.0.1:29500",
-        data_output_dir=str(SCRIPT_DIR / "osft_processed_data"),
-        save_final_checkpoint=True,
-    )
-except Exception as exc:
-    if "out of memory" in str(exc).lower():
-        print("OSFT ran out of GPU memory on this L4. The next try is LoRA.")
-    raise
+from training_hub import lora_sft
+
+lora_sft(
+    model_path=model_id,
+    data_path=formatted_dataset,
+    ckpt_output_dir=output_dir,
+    lora_r=16,
+    lora_alpha=32,
+    # num_epochs=3,
+    num_epochs=1,
+    learning_rate=2e-4,
+    load_in_4bit=True,
+)
 
 upload_finetuned_artifact(output_dir)
 
 print("\n=========================================================")
-print("OSFT fine-tuning complete.")
+print("LoRA fine-tuning complete.")
 print(f"Local artifact: {os.path.abspath(output_dir)}")
 print(f"S3 artifact:    {s3_uri}")
 print("=========================================================")
