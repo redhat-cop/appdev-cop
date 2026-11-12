@@ -100,6 +100,17 @@ def is_table_of_contents(heading: str) -> bool:
     )
 
 
+# def is_glossary_heading(heading: str) -> bool:
+#     normalized = re.sub(r"[^a-z]+", " ", heading.lower()).strip()
+#     return "glossary" in normalized
+#
+#
+# def is_procedure_heading(heading: str) -> bool:
+#     """A chapter or procedure heading marks the end of the glossary list."""
+#     normalized = re.sub(r"[^a-z0-9]+", " ", heading.lower()).strip()
+#     return normalized.startswith(("chapter ", "procedure", "prerequisites", "verification"))
+
+
 def extract_markdown_sections(md_dir: Path, min_chars: int = 100) -> list[tuple[str, str, str]]:
     """Read Markdown files and split them into sections based on headings."""
     if not md_dir.is_dir():
@@ -127,8 +138,16 @@ def extract_markdown_sections(md_dir: Path, min_chars: int = 100) -> list[tuple[
             continue
 
         # Extract content under each heading. The heading itself is document_outline.
+        # Glossary definitions stay, together with the login, project, and workbench steps.
+        # in_glossary = False
         for idx, match in enumerate(matches):
             heading = match.group(2).strip()
+            # if is_glossary_heading(heading):
+            #     in_glossary = True
+            #     continue
+            # if in_glossary and is_procedure_heading(heading):
+            #     in_glossary = False
+            # if is_table_of_contents(heading) or in_glossary:
             if is_table_of_contents(heading):
                 continue
             start = match.end()
