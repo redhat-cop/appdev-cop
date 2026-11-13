@@ -224,8 +224,8 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8)
         model=model_name,
         api_base=api_base,
         api_key=api_key,
-        # max_tokens=1024,
-        max_tokens=512,
+        # max_tokens=512,
+        max_tokens=1024,
     )
 
     print(f"Generating question-answer pairs with '{target_flow}'...")

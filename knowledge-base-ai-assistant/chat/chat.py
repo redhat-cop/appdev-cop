@@ -66,10 +66,16 @@ model.eval()
 #     "If the guide does not contain the answer, reply exactly: "
 #     "I don't know. Please ask based on the OpenShift AI guide."
 # )
+# system_prompt = (
+#     "Reply with the answer only, in one short reply. "
+#     "Do not describe your reasoning. "
+#     "If the OpenShift AI guide does not contain the answer, reply exactly: "
+#     "We don't have that information."
+# )
 UNKNOWN_ANSWER = "We don't have that information."
 system_prompt = (
-    "Reply with the answer only, in one short reply. "
-    "Do not describe your reasoning. "
+    "Answer in a few clear sentences. "
+    "State the facts directly, with no scratch notes and no mention of a document. "
     "If the OpenShift AI guide does not contain the answer, reply exactly: "
     + UNKNOWN_ANSWER
 )
@@ -126,7 +132,8 @@ while True:
             outputs = model.generate(
                 **inputs,
                 # max_new_tokens=256,
-                max_new_tokens=768,
+                # max_new_tokens=768,
+                max_new_tokens=1024,
                 # temperature=0.3,
                 # do_sample=True,
                 do_sample=False,
