@@ -199,7 +199,7 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8)
             # "icl_document": "RHOAI 3.5",
             "icl_document": "RedHat OpenShift AI 3.5",
             "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
-            "icl_query_2": "How do I set up a project and workbench?",
+            "icl_query_2": "How do I set up a project and workbench in OpenShift AI?",
             "icl_query_3": "Explain the difference between model serving and AI pipelines.",
             "icl_query_4": "How do connections help with Object Storage?",
             "icl_query_5": "How do workbenches help with model development and training?",
