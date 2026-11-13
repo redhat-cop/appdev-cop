@@ -74,6 +74,21 @@ system_prompt = (
     + UNKNOWN_ANSWER
 )
 
+
+def visible_answer(text: str) -> str:
+    """Keep the answer and drop the scratch reasoning."""
+    if "</think>" in text:
+        text = text.split("</think>", 1)[-1]
+    kept = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("\\boxed{") or stripped.startswith(r"\boxed{"):
+            continue
+        kept.append(line)
+    text = "\n".join(kept).strip()
+    return text or UNKNOWN_ANSWER
+
+
 print("\n🤖 Custom Granite Model is ready! Type 'exit' or 'quit' to stop.")
 print("=========================================================\n")
 
@@ -110,7 +125,8 @@ while True:
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_new_tokens=256,
+                # max_new_tokens=256,
+                max_new_tokens=768,
                 # temperature=0.3,
                 # do_sample=True,
                 do_sample=False,
