@@ -1,11 +1,10 @@
 import json
-import os
 import re
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-from datasets import Dataset
+import pandas as pd
 from sdg_hub import Flow, FlowRegistry
 
 
@@ -44,33 +43,36 @@ def require_model_server(api_base: str, model_name: str) -> None:
         )
     print(f"vLLM is ready at {api_base} with model {served_name}")
 
-print("=========================================================")
-print("📦 RHOAI Native Flow Registry: Multi-Row Generation")
-print("=========================================================\n")
 
+# ==============================================================================
+# Configuration
+# ==============================================================================
 # model_name = "hosted_vllm/ibm-granite/granite-3.0-8b-instruct"
 model_name = "hosted_vllm/ibm-granite/granite-4.2-8b"
 api_base = "http://127.0.0.1:8000/v1"
-require_model_server(api_base, model_name)
-
-# 1. Discover built-in workflows
-FlowRegistry.discover_flows()
-
-# 2. Bind directly to the verified system flow template
-# target_flow = "Document Based Knowledge Tuning Dataset Generation Flow"
-# flow_path = FlowRegistry.get_flow_path(target_flow)
-# The built-in flow's own default model is openai/gpt-oss-120b.
-# set_model_config below replaces that default with the local Granite server.
+api_key = "rhoai-local-token"
+# api_key = os.getenv("VLLM_API_KEY", "EMPTY")
 target_flow = "stellar-peak-605"  # Document Based Knowledge Tuning
-flow_path = FlowRegistry.get_flow_path_safe(target_flow)
-flow = Flow.from_yaml(flow_path)
 
-# 3. Configure local vLLM engine
-flow.set_model_config(
-    model=model_name,
-    api_base=api_base,
-    api_key="rhoai-local-token",
-    max_tokens=512
+try:
+    SCRIPT_DIR = Path(__file__).resolve().parent
+except NameError:
+    SCRIPT_DIR = Path.cwd()
+
+# The sample uses Path("docling_out") next to the script.
+# Docling writes one folder up, in docling/docling_out.
+# DOCLING_MD_DIR = Path("docling_out")
+DOCLING_MD_DIR = SCRIPT_DIR.parent / "docling" / "docling_out"
+# RAW_OUTPUT_PATH = Path("sdg_out/stellar_peak_raw.jsonl")
+# TRAIN_READY_JSONL = Path("sdg_out/training_dataset.jsonl")
+RAW_OUTPUT_PATH = SCRIPT_DIR / "sdg_out" / "stellar_peak_raw.jsonl"
+TRAIN_OUTPUT_PATH = SCRIPT_DIR / "sdg_out" / "synthetic_training_data.jsonl"
+
+# icl_document = "RedHat OpenShift AI 3.5"
+ICL_REFERENCE_DOC = (
+    "Red Hat OpenShift AI is an artificial intelligence platform that provides tools to rapidly "
+    "train, serve, and monitor machine learning models across on-premise, cloud, or disconnected "
+    "environments."
 )
 
 # 4. Ingest the clean Markdown text created by Docling
@@ -90,14 +92,6 @@ flow.set_model_config(
 #
 # print(f"🧩 Split document into {len(chunks)} distinct segments for generation...")
 
-try:
-    SCRIPT_DIR = Path(__file__).resolve().parent
-except NameError:
-    SCRIPT_DIR = Path.cwd()
-
-DOCLING_OUT_DIR = SCRIPT_DIR.parent / "docling" / "docling_out"
-HEADING_LINE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
-
 
 def is_table_of_contents(heading: str) -> bool:
     normalized = re.sub(r"[^a-z]+", " ", heading.lower()).strip()
@@ -106,91 +100,147 @@ def is_table_of_contents(heading: str) -> bool:
     )
 
 
-def split_markdown_sections(markdown: str) -> list[tuple[str, str]]:
-    """Return (heading, section text) pairs. Text before the first heading is skipped."""
+# def is_glossary_heading(heading: str) -> bool:
+#     normalized = re.sub(r"[^a-z]+", " ", heading.lower()).strip()
+#     return "glossary" in normalized
+#
+#
+# def is_procedure_heading(heading: str) -> bool:
+#     """A chapter or procedure heading marks the end of the glossary list."""
+#     normalized = re.sub(r"[^a-z0-9]+", " ", heading.lower()).strip()
+#     return normalized.startswith(("chapter ", "procedure", "prerequisites", "verification"))
+
+
+def extract_markdown_sections(md_dir: Path, min_chars: int = 100) -> list[tuple[str, str, str]]:
+    """Read Markdown files and split them into sections based on headings."""
+    if not md_dir.is_dir():
+        raise FileNotFoundError(
+            f"No .md files found in {md_dir}. Please place your Docling output here."
+        )
+
+    md_files = sorted(path for path in md_dir.rglob("*.md") if path.is_file())
+    if not md_files:
+        raise FileNotFoundError(
+            f"No .md files found in {md_dir}. Please place your Docling output here."
+        )
+
+    # heading_pattern = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+    heading_pattern = re.compile(r"^(#{1,3})\s+(.+)$", re.MULTILINE)
     sections = []
-    heading = None
-    lines: list[str] = []
 
-    def save_current() -> None:
-        if heading is None:
-            return
-        body = "\n".join(lines[1:]).strip()
-        if not body or is_table_of_contents(heading):
-            return
-        sections.append((heading, "\n".join(lines).strip()))
+    for md_file in md_files:
+        text = md_file.read_text(encoding="utf-8").strip()
+        matches = list(heading_pattern.finditer(text))
 
-    for line in markdown.splitlines():
-        match = HEADING_LINE.match(line)
-        if match:
-            save_current()
+        # If no headings exist, treat the whole document as one section
+        if not matches and len(text) >= min_chars:
+            sections.append((md_file.name, md_file.stem, text))
+            continue
+
+        # Extract content under each heading. The heading itself is document_outline.
+        # Glossary definitions stay, together with the login, project, and workbench steps.
+        # in_glossary = False
+        for idx, match in enumerate(matches):
             heading = match.group(2).strip()
-            lines = [line]
-        elif heading is not None:
-            lines.append(line)
+            # if is_glossary_heading(heading):
+            #     in_glossary = True
+            #     continue
+            # if in_glossary and is_procedure_heading(heading):
+            #     in_glossary = False
+            # if is_table_of_contents(heading) or in_glossary:
+            if is_table_of_contents(heading):
+                continue
+            start = match.end()
+            end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+            section_text = text[start:end].strip()
+            if len(section_text) >= min_chars:
+                sections.append((md_file.name, heading, section_text))
 
-    save_current()
     return sections
 
 
-def load_docling_sections(docling_out_dir: Path) -> list[tuple[str, str, str]]:
-    if not docling_out_dir.is_dir():
-        raise FileNotFoundError(
-            f"Missing Docling output folder: {docling_out_dir}. Run Docling first!"
-        )
+def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8) -> pd.DataFrame:
+    """Run stellar-peak-605 on Docling sections and write the raw and training files."""
+    raw_data = []
+    for _source_name, heading, section_text in sections:
+        raw_data.append({
+            "document": section_text,
+            # "document_outline": "Red Hat OpenShift AI Self-Managed Getting Started Guide.",
+            "document_outline": heading,
+            "domain": "Enterprise AI",
+            "icl_document": "RHOAI 3.5",
+            "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
+            "icl_query_2": "How do I set up a project and workbench?",
+            "icl_query_3": "Explain the difference between model serving and AI pipelines.",
+            "icl_query_4": "How do connections help with Object Storage?",
+            "icl_query_5": "How do workbenches help with model development and training?",
+        })
 
-    markdown_files = sorted(
-        path for path in docling_out_dir.rglob("*.md") if path.is_file()
+    input_df = pd.DataFrame(raw_data)
+    print(f"Prepared {len(input_df)} document sections for generation.")
+
+    FlowRegistry.discover_flows()
+    # flow_path = FlowRegistry.get_flow_path(target_flow) or FlowRegistry.get_flow_path("Document Based Knowledge Tuning")
+    flow_path = FlowRegistry.get_flow_path_safe(target_flow) or FlowRegistry.get_flow_path_safe(
+        "Document Based Knowledge Tuning"
     )
-    if not markdown_files:
-        raise FileNotFoundError(
-            f"No Markdown files in {docling_out_dir}. Run Docling first!"
-        )
+    if not flow_path:
+        raise ValueError(f"Flow '{target_flow}' not found in FlowRegistry.")
 
-    sections = []
-    for markdown_file in markdown_files:
-        text = markdown_file.read_text(encoding="utf-8")
-        for heading, section_text in split_markdown_sections(text):
-            sections.append((markdown_file.name, heading, section_text))
-    return sections
-
-
-print(f"Reading Docling Markdown from: {DOCLING_OUT_DIR}")
-sections = load_docling_sections(DOCLING_OUT_DIR)
-if not sections:
-    raise ValueError(
-        f"No content sections found in {DOCLING_OUT_DIR}. "
-        "The Markdown has no usable headings after the table of contents."
+    flow = Flow.from_yaml(flow_path)
+    # The answer step in stellar-peak-605 asks for 4096 tokens.
+    # This vLLM server allows 4096 tokens total, so that request leaves no room for the prompt.
+    flow.set_model_config(
+        model=model_name,
+        api_base=api_base,
+        api_key=api_key,
+        max_tokens=1024,
     )
-print(f"Split Markdown into {len(sections)} section(s), skipping the table of contents...")
-for source_name, heading, _section_text in sections:
-    print(f"  - {source_name}: {heading}")
 
-raw_data = []
-for _source_name, heading, section_text in sections:
-    raw_data.append({
-        "document": section_text,
-        # "document_outline": "Red Hat OpenShift AI Self-Managed Getting Started Guide.",
-        "document_outline": heading,
-        "domain": "Enterprise AI",
-        "icl_document": "RedHat OpenShift AI 3.5",
-        "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
-        "icl_query_2": "How do I set up a project and workbench?",
-        "icl_query_3": "Explain the difference between model serving and AI pipelines.",
-        "icl_query_4": "How do connections help with Object Storage?",
-        "icl_query_5": "How do workbenches help with model development and training?"
-    })
+    print(f"Generating question-answer pairs with '{target_flow}'...")
+    result_df = flow.generate(input_df, max_concurrency=max_concurrency)
 
-dataset = Dataset.from_list(raw_data)
+    RAW_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    result_df.to_json(RAW_OUTPUT_PATH, orient="records", lines=True, force_ascii=False)
+    print(f"Saved {len(result_df)} raw rows -> {RAW_OUTPUT_PATH}")
 
-print("\n🚀 Passing chunks to the Granite 8B engine via Flow execution...")
-result_dataset = flow.generate(dataset)
+    exported = 0
+    with TRAIN_OUTPUT_PATH.open("w", encoding="utf-8") as handle:
+        for _, row in result_df.iterrows():
+            question = row.get("question") or row.get("query")
+            answer = row.get("response") or row.get("answer")
+            if pd.notna(question) and pd.notna(answer) and str(question).strip() and str(answer).strip():
+                record = {
+                    "messages": [
+                        {"role": "user", "content": str(question).strip()},
+                        {"role": "assistant", "content": str(answer).strip()},
+                    ]
+                }
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+                exported += 1
 
-# 5. Output the multi-row dataset for Training Hub ingestion
-output_file = "synthetic_training_data.jsonl"
-result_dataset.to_json(output_file)
+    print(f"Success! Exported {exported} training pairs to {TRAIN_OUTPUT_PATH}")
+    return result_df
 
-print("\n=========================================================")
-print(f"🎉 SUCCESS! Native SDG Flow execution complete.")
-print(f"💾 Multi-row dataset compiled: {os.path.abspath(output_file)}")
-print("=========================================================")
+
+def main() -> None:
+    print("=========================================================")
+    print("RHOAI SDG flow: stellar-peak-605")
+    print("=========================================================\n")
+    require_model_server(api_base, model_name)
+    print(f"Loading SDG Hub flow: {target_flow}...")
+    print(f"Reading Docling Markdown from: {DOCLING_MD_DIR}")
+    sections = extract_markdown_sections(DOCLING_MD_DIR)
+    if not sections:
+        raise ValueError(
+            f"No content sections found in {DOCLING_MD_DIR}. "
+            "The Markdown has no usable headings after the table of contents."
+        )
+    print(f"Split Markdown into {len(sections)} section(s), skipping the table of contents...")
+    for source_name, heading, _section_text in sections:
+        print(f"  - {source_name}: {heading}")
+    run_sdg_flow(sections)
+
+
+if __name__ == "__main__":
+    main()
