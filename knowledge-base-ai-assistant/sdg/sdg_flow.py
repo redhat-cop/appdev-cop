@@ -187,6 +187,19 @@ def chunk_guide(md_dir: Path, chunk_size: int = CHUNK_SIZE) -> list[tuple[str, s
     return pieces
 
 
+def visible_answer(text: str) -> str:
+    """Keep the answer and drop the scratch reasoning."""
+    if "</think>" in text:
+        text = text.split("</think>", 1)[-1]
+    kept = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("\\boxed{") or stripped.startswith(r"\boxed{"):
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip()
+
+
 def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 4) -> Dataset:
     """Run stellar-peak-605 on Docling sections and write the raw and training files."""
     raw_data = []
@@ -243,11 +256,15 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 4)
         for row in result_dataset:
             question = row.get("question") or row.get("query")
             answer = row.get("response") or row.get("answer")
-            if question is not None and answer is not None and str(question).strip() and str(answer).strip():
+            # answer_text = str(answer).strip()
+            answer_text = visible_answer(str(answer)) if answer is not None else ""
+            # if question is not None and answer is not None and str(question).strip() and str(answer).strip():
+            if question is not None and answer is not None and str(question).strip() and answer_text:
                 record = {
                     "messages": [
                         {"role": "user", "content": str(question).strip()},
-                        {"role": "assistant", "content": str(answer).strip()},
+                        # {"role": "assistant", "content": str(answer).strip()},
+                        {"role": "assistant", "content": answer_text},
                     ]
                 }
                 handle.write(json.dumps(record, ensure_ascii=False) + "\n")
