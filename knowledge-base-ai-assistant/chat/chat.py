@@ -113,12 +113,14 @@ while True:
             {"role": "user", "content": user_input},
         ]
         try:
-            # thinking=False stops Granite 4.2 from writing the scratch notes first.
+            # thinking=False is the Granite 3.2 switch and does not turn off Granite 4.2.
+            # enable_thinking=False stops Granite 4.2 from writing the scratch notes first.
             prompt = tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
                 add_generation_prompt=True,
-                thinking=False,
+                # thinking=False,
+                enable_thinking=False,
             )
         except Exception:
             prompt = tokenizer.apply_chat_template(
