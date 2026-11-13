@@ -187,7 +187,7 @@ def chunk_guide(md_dir: Path, chunk_size: int = CHUNK_SIZE) -> list[tuple[str, s
     return pieces
 
 
-def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8) -> Dataset:
+def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 4) -> Dataset:
     """Run stellar-peak-605 on Docling sections and write the raw and training files."""
     raw_data = []
     for _source_name, _heading, section_text in sections:
@@ -229,7 +229,8 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8)
     )
 
     print(f"Generating question-answer pairs with '{target_flow}'...")
-    # result_df = flow.generate(input_df, max_concurrency=max_concurrency)
+    # result_df = flow.generate(input_df, max_concurrency=8)
+    # max_concurrency=8 timed out the faithfulness check at 120 seconds.
     result_dataset = flow.generate(input_dataset, max_concurrency=max_concurrency)
 
     RAW_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
