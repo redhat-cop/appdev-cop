@@ -61,10 +61,17 @@ model = PeftModel.from_pretrained(base_model, model_path, local_files_only=True)
 model.eval()
 
 # system_prompt = "You are a helpful corporate assistant grounded strictly in provided technical documentation."
+# system_prompt = (
+#     "Answer from the OpenShift AI guide in one short reply. "
+#     "If the guide does not contain the answer, reply exactly: "
+#     "I don't know. Please ask based on the OpenShift AI guide."
+# )
+UNKNOWN_ANSWER = "We don't have that information."
 system_prompt = (
-    "Answer from the OpenShift AI guide in one short reply. "
-    "If the guide does not contain the answer, reply exactly: "
-    "I don't know. Please ask based on the OpenShift AI guide."
+    "Reply with the answer only, in one short reply. "
+    "Do not describe your reasoning. "
+    "If the OpenShift AI guide does not contain the answer, reply exactly: "
+    + UNKNOWN_ANSWER
 )
 
 print("\n🤖 Custom Granite Model is ready! Type 'exit' or 'quit' to stop.")
@@ -84,26 +91,34 @@ while True:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_input},
         ]
-        prompt = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-        )
+        try:
+            # thinking=False stops Granite 4.2 from writing the scratch notes first.
+            prompt = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+                thinking=False,
+            )
+        except Exception:
+            prompt = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
         inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
 
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
                 max_new_tokens=256,
-                temperature=0.3,
-                do_sample=True,
+                # temperature=0.3,
+                # do_sample=True,
+                do_sample=False,
                 pad_token_id=tokenizer.eos_token_id,
             )
 
         new_tokens = outputs[0][inputs["input_ids"].shape[-1] :]
-        response = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
-        if "</think>" in response:
-            response = response.split("</think>", 1)[-1].strip()
+        response = visible_answer(tokenizer.decode(new_tokens, skip_special_tokens=True))
 
         print(f"\n🤖 Granite Custom: {response}\n")
         print("-" * 60)
