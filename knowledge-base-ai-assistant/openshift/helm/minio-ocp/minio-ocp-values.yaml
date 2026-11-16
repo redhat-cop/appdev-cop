@@ -5,7 +5,7 @@ mode: standalone
 
 # Your root S3 credentials for the Console and API
 rootUser: "minioadmin"
-rootPassword: "minio-strong-password"
+rootPassword: ""
 
 # CRUCIAL FOR OPENSHIFT: Disable hardcoded user IDs/GIDs
 # This allows OpenShift to inject its own random non-root UID
