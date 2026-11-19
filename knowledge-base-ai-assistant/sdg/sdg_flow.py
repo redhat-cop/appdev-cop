@@ -177,7 +177,7 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 4)
             "document": section_text,
             "document_outline": GUIDE_OUTLINE,
             "domain": "Enterprise AI",
-            "icl_document": "ICL_REFERENCE_DOC",
+            "icl_document": ICL_REFERENCE_DOC,
             "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
             "icl_query_2": "How do I set up a project and workbench in OpenShift AI?",
             "icl_query_3": "Explain the difference between model serving and AI pipelines.",
