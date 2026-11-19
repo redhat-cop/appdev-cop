@@ -36,11 +36,8 @@ def _resolve_script_dir() -> Path:
 
 SCRIPT_DIR = _resolve_script_dir()
 # DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "data"
-# DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "docling_data"
 DEFAULT_DATA_DIR = SCRIPT_DIR / "docling_data"
-# DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "out"
 # DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "output"
-# DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "docling_out"
 DEFAULT_OUT_DIR = SCRIPT_DIR / "docling_out"
 
 SUPPORTED_EXTENSIONS = {
