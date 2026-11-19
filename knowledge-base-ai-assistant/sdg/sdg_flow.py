@@ -209,8 +209,8 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 4)
             "document_outline": GUIDE_OUTLINE,
             # "document_outline": heading,
             "domain": "Enterprise AI",
-            # "icl_document": "RHOAI 3.5",
-            "icl_document": "RedHat OpenShift AI 3.5",
+            # "icl_document": "RedHat OpenShift AI 3.5",
+            "icl_document": "ICL_REFERENCE_DOC",
             "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
             "icl_query_2": "How do I set up a project and workbench in OpenShift AI?",
             "icl_query_3": "Explain the difference between model serving and AI pipelines.",
@@ -238,7 +238,7 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 4)
         api_base=api_base,
         api_key=api_key,
         # max_tokens=512,
-        max_tokens=1024,
+        max_tokens=2048,
     )
 
     print(f"Generating question-answer pairs with '{target_flow}'...")
@@ -281,8 +281,8 @@ def main() -> None:
     require_model_server(api_base, model_name)
     print(f"Loading SDG Hub flow: {target_flow}...")
     print(f"Reading Docling Markdown from: {DOCLING_MD_DIR}")
-    # sections = extract_markdown_sections(DOCLING_MD_DIR)
-    sections = chunk_guide(DOCLING_MD_DIR)
+    sections = extract_markdown_sections(DOCLING_MD_DIR)
+    #sections = chunk_guide(DOCLING_MD_DIR)
     if not sections:
         raise ValueError(f"No text found in {DOCLING_MD_DIR}. Run Docling first.")
     print(f"Split Markdown into {len(sections)} piece(s) of {CHUNK_SIZE} characters...")
