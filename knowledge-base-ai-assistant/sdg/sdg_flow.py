@@ -53,6 +53,7 @@ def require_model_server(api_base: str, model_name: str) -> None:
 # ==============================================================================
 # Configuration & Paths
 # ==============================================================================
+# model_name = "hosted_vllm/ibm-granite/granite-3.0-8b-instruct"
 model_name = "hosted_vllm/ibm-granite/granite-4.2-8b"
 api_base = "http://127.0.0.1:8000/v1"
 api_key = "rhoai-local-token"
