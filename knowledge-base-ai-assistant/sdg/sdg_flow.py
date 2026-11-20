@@ -4,7 +4,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-import pandas as pd
+# import pandas as pd
+from datasets import Dataset
 from sdg_hub import Flow, FlowRegistry
 
 
@@ -159,25 +160,67 @@ def extract_markdown_sections(md_dir: Path, min_chars: int = 100) -> list[tuple[
     return sections
 
 
-def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8) -> pd.DataFrame:
+GUIDE_OUTLINE = "Red Hat OpenShift AI Self-Managed Getting Started Guide."
+CHUNK_SIZE = 2500
+
+
+def chunk_guide(md_dir: Path, chunk_size: int = CHUNK_SIZE) -> list[tuple[str, str, str]]:
+    """Cut each Docling Markdown file into fixed-size pieces, as the old flow did."""
+    if not md_dir.is_dir():
+        raise FileNotFoundError(
+            f"No .md files found in {md_dir}. Please place your Docling output here."
+        )
+    md_files = sorted(path for path in md_dir.rglob("*.md") if path.is_file())
+    if not md_files:
+        raise FileNotFoundError(
+            f"No .md files found in {md_dir}. Please place your Docling output here."
+        )
+
+    pieces = []
+    for md_file in md_files:
+        text = md_file.read_text(encoding="utf-8").strip()
+        # chunks = chunks[:5]  # Cap at 5 rows to keep your live demo execution fast
+        for start in range(0, len(text), chunk_size):
+            chunk = text[start : start + chunk_size].strip()
+            if chunk:
+                pieces.append((md_file.name, GUIDE_OUTLINE, chunk))
+    return pieces
+
+
+def visible_answer(text: str) -> str:
+    """Keep the answer and drop the scratch reasoning."""
+    if "</think>" in text:
+        text = text.split("</think>", 1)[-1]
+    kept = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("\\boxed{") or stripped.startswith(r"\boxed{"):
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip()
+
+
+def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 4) -> Dataset:
     """Run stellar-peak-605 on Docling sections and write the raw and training files."""
     raw_data = []
-    for _source_name, heading, section_text in sections:
+    for _source_name, _heading, section_text in sections:
         raw_data.append({
             "document": section_text,
-            # "document_outline": "Red Hat OpenShift AI Self-Managed Getting Started Guide.",
-            "document_outline": heading,
+            "document_outline": GUIDE_OUTLINE,
+            # "document_outline": heading,
             "domain": "Enterprise AI",
-            "icl_document": "RHOAI 3.5",
+            # "icl_document": "RHOAI 3.5",
+            "icl_document": "RedHat OpenShift AI 3.5",
             "icl_query_1": "What are the core steps in the OpenShift AI workflow?",
-            "icl_query_2": "How do I set up a project and workbench?",
+            "icl_query_2": "How do I set up a project and workbench in OpenShift AI?",
             "icl_query_3": "Explain the difference between model serving and AI pipelines.",
             "icl_query_4": "How do connections help with Object Storage?",
             "icl_query_5": "How do workbenches help with model development and training?",
         })
 
-    input_df = pd.DataFrame(raw_data)
-    print(f"Prepared {len(input_df)} document sections for generation.")
+    # input_df = pd.DataFrame(raw_data)
+    input_dataset = Dataset.from_list(raw_data)
+    print(f"Prepared {len(input_dataset)} document sections for generation.")
 
     FlowRegistry.discover_flows()
     # flow_path = FlowRegistry.get_flow_path(target_flow) or FlowRegistry.get_flow_path("Document Based Knowledge Tuning")
@@ -194,33 +237,41 @@ def run_sdg_flow(sections: list[tuple[str, str, str]], max_concurrency: int = 8)
         model=model_name,
         api_base=api_base,
         api_key=api_key,
+        # max_tokens=512,
         max_tokens=1024,
     )
 
     print(f"Generating question-answer pairs with '{target_flow}'...")
-    result_df = flow.generate(input_df, max_concurrency=max_concurrency)
+    # result_df = flow.generate(input_df, max_concurrency=8)
+    # max_concurrency=8 timed out the faithfulness check at 120 seconds.
+    result_dataset = flow.generate(input_dataset, max_concurrency=max_concurrency)
 
     RAW_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    result_df.to_json(RAW_OUTPUT_PATH, orient="records", lines=True, force_ascii=False)
-    print(f"Saved {len(result_df)} raw rows -> {RAW_OUTPUT_PATH}")
+    # result_df.to_json(RAW_OUTPUT_PATH, orient="records", lines=True, force_ascii=False)
+    result_dataset.to_json(str(RAW_OUTPUT_PATH), force_ascii=False)
+    print(f"Saved {len(result_dataset)} raw rows -> {RAW_OUTPUT_PATH}")
 
     exported = 0
     with TRAIN_OUTPUT_PATH.open("w", encoding="utf-8") as handle:
-        for _, row in result_df.iterrows():
+        for row in result_dataset:
             question = row.get("question") or row.get("query")
             answer = row.get("response") or row.get("answer")
-            if pd.notna(question) and pd.notna(answer) and str(question).strip() and str(answer).strip():
+            # answer_text = str(answer).strip()
+            answer_text = visible_answer(str(answer)) if answer is not None else ""
+            # if question is not None and answer is not None and str(question).strip() and str(answer).strip():
+            if question is not None and answer is not None and str(question).strip() and answer_text:
                 record = {
                     "messages": [
                         {"role": "user", "content": str(question).strip()},
-                        {"role": "assistant", "content": str(answer).strip()},
+                        # {"role": "assistant", "content": str(answer).strip()},
+                        {"role": "assistant", "content": answer_text},
                     ]
                 }
                 handle.write(json.dumps(record, ensure_ascii=False) + "\n")
                 exported += 1
 
     print(f"Success! Exported {exported} training pairs to {TRAIN_OUTPUT_PATH}")
-    return result_df
+    return result_dataset
 
 
 def main() -> None:
@@ -230,15 +281,13 @@ def main() -> None:
     require_model_server(api_base, model_name)
     print(f"Loading SDG Hub flow: {target_flow}...")
     print(f"Reading Docling Markdown from: {DOCLING_MD_DIR}")
-    sections = extract_markdown_sections(DOCLING_MD_DIR)
+    # sections = extract_markdown_sections(DOCLING_MD_DIR)
+    sections = chunk_guide(DOCLING_MD_DIR)
     if not sections:
-        raise ValueError(
-            f"No content sections found in {DOCLING_MD_DIR}. "
-            "The Markdown has no usable headings after the table of contents."
-        )
-    print(f"Split Markdown into {len(sections)} section(s), skipping the table of contents...")
-    for source_name, heading, _section_text in sections:
-        print(f"  - {source_name}: {heading}")
+        raise ValueError(f"No text found in {DOCLING_MD_DIR}. Run Docling first.")
+    print(f"Split Markdown into {len(sections)} piece(s) of {CHUNK_SIZE} characters...")
+    for source_name, _outline, section_text in sections:
+        print(f"  - {source_name}: {len(section_text)} characters")
     run_sdg_flow(sections)
 
 

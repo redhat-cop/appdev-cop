@@ -255,11 +255,11 @@ lora_sft(
 # 5. LOCAL OUTPUT
 # =====================================================================
 # Upload stays in this file. Turn it back on when the MinIO bucket is ready.
-# upload_finetuned_artifact(output_dir)
+upload_finetuned_artifact(output_dir)
 
 print("\n=========================================================")
 print("LoRA fine-tuning complete.")
 print(f"Local artifact: {os.path.abspath(output_dir)}")
-# print(f"S3 artifact:    {s3_uri}")
-print("S3 upload is commented out until the bucket is ready.")
+print(f"S3 artifact:    {s3_uri}")
+# print("S3 upload is commented out until the bucket is ready.")
 print("=========================================================")

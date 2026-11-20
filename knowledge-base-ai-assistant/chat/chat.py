@@ -66,13 +66,34 @@ model.eval()
 #     "If the guide does not contain the answer, reply exactly: "
 #     "I don't know. Please ask based on the OpenShift AI guide."
 # )
+# system_prompt = (
+#     "Reply with the answer only, in one short reply. "
+#     "Do not describe your reasoning. "
+#     "If the OpenShift AI guide does not contain the answer, reply exactly: "
+#     "We don't have that information."
+# )
 UNKNOWN_ANSWER = "We don't have that information."
 system_prompt = (
-    "Reply with the answer only, in one short reply. "
-    "Do not describe your reasoning. "
+    "Answer in a few clear sentences. "
+    "State the facts directly, with no scratch notes and no mention of a document. "
     "If the OpenShift AI guide does not contain the answer, reply exactly: "
     + UNKNOWN_ANSWER
 )
+
+
+def visible_answer(text: str) -> str:
+    """Keep the answer and drop the scratch reasoning."""
+    if "</think>" in text:
+        text = text.split("</think>", 1)[-1]
+    kept = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("\\boxed{") or stripped.startswith(r"\boxed{"):
+            continue
+        kept.append(line)
+    text = "\n".join(kept).strip()
+    return text or UNKNOWN_ANSWER
+
 
 print("\n🤖 Custom Granite Model is ready! Type 'exit' or 'quit' to stop.")
 print("=========================================================\n")
@@ -92,12 +113,14 @@ while True:
             {"role": "user", "content": user_input},
         ]
         try:
-            # thinking=False stops Granite 4.2 from writing the scratch notes first.
+            # thinking=False is the Granite 3.2 switch and does not turn off Granite 4.2.
+            # enable_thinking=False stops Granite 4.2 from writing the scratch notes first.
             prompt = tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
                 add_generation_prompt=True,
-                thinking=False,
+                # thinking=False,
+                enable_thinking=False,
             )
         except Exception:
             prompt = tokenizer.apply_chat_template(
@@ -110,7 +133,9 @@ while True:
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_new_tokens=256,
+                # max_new_tokens=256,
+                # max_new_tokens=768,
+                max_new_tokens=1024,
                 # temperature=0.3,
                 # do_sample=True,
                 do_sample=False,

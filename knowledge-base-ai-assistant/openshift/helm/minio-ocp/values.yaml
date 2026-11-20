@@ -4,7 +4,7 @@ minio:
   mode: standalone
 
   rootUser: "minioadmin"
-  rootPassword: "minio-strong-password"
+  rootPassword: ""
 
   securityContext:
     enabled: false
