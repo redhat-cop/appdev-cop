@@ -1,3 +1,6 @@
+# ==============================================================================
+# Imports & CLI App Initialization
+# ==============================================================================
 from __future__ import annotations
 
 import json
@@ -17,6 +20,9 @@ from sentence_transformers import SentenceTransformer
 app = typer.Typer()
 
 
+# ==============================================================================
+# Paths & Supported File Formats
+# ==============================================================================
 def _resolve_script_dir() -> Path:
     try:
         return Path(__file__).resolve().parent
@@ -36,11 +42,8 @@ def _resolve_script_dir() -> Path:
 
 SCRIPT_DIR = _resolve_script_dir()
 # DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "data"
-# DEFAULT_DATA_DIR = SCRIPT_DIR.parent / "docling_data"
 DEFAULT_DATA_DIR = SCRIPT_DIR / "docling_data"
-# DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "out"
 # DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "output"
-# DEFAULT_OUT_DIR = SCRIPT_DIR.parent / "docling_out"
 DEFAULT_OUT_DIR = SCRIPT_DIR / "docling_out"
 
 SUPPORTED_EXTENSIONS = {
@@ -50,6 +53,9 @@ SUPPORTED_EXTENSIONS = {
 }
 
 
+# ==============================================================================
+# Document Discovery & Collection
+# ==============================================================================
 # Return True when a file extension is supported by Docling.
 def is_supported_document(path: Path) -> bool:
     name = path.name.lower()
@@ -75,6 +81,9 @@ def collect_documents(data_dir: Path) -> List[Path]:
     return documents
 
 
+# ==============================================================================
+# Markdown Cleanup & Formatting
+# ==============================================================================
 # Dot leaders from PDF tables of contents, e.g. ". . . . . . CHAPTER 1".
 _DOT_LEADER = re.compile(r"(?:\s*\.\s*){4,}")
 _LEADING_DOT_LEADER = re.compile(r"^(?:\.\s*){2,}")
@@ -160,6 +169,9 @@ def export_document_markdown(document) -> str:
     return clean_markdown(markdown)
 
 
+# ==============================================================================
+# Docling Document Conversion
+# ==============================================================================
 # PDF table structure stays on. OCR stays off unless a scanned PDF needs it.
 # def build_document_converter(do_ocr: bool = False) -> DocumentConverter:
 # PDF table structure stays on. OCR is on so text inside images and scans is read.
@@ -228,6 +240,9 @@ def convert_to_markdown(
     return results
 
 
+# ==============================================================================
+# Text Chunking & FAISS Vector Index
+# ==============================================================================
 # Split Markdown into overlapping chunks for embedding and search.
 def chunk_markdown(md_text: str, chunk_size=1200, overlap=200) -> List[str]:
     splitter = RecursiveCharacterTextSplitter(
@@ -311,6 +326,9 @@ def search(
     return results
 
 
+# ==============================================================================
+# CLI Commands
+# ==============================================================================
 # CLI command: convert documents from data_dir and optionally build the index.
 @app.command()
 def ingest(
@@ -371,5 +389,8 @@ def query(
         )
 
 
+# ==============================================================================
+# Entry Point
+# ==============================================================================
 if __name__ == "__main__":
     app()
