@@ -36,7 +36,6 @@ except NameError:
 # model_id = "ibm-granite/granite-3.0-8b-instruct"
 model_id = "ibm-granite/granite-4.2-8b"
 # source_dataset = "/opt/app-root/src/appdev-cop/knowledge-base-ai-assistant/sdg/synthetic_training_data.jsonl"
-# source_dataset = str(SCRIPT_DIR.parent / "sdg" / "synthetic_training_data.jsonl")
 source_dataset = str(SCRIPT_DIR.parent / "sdg" / "sdg_out" / "synthetic_training_data.jsonl")
 # source_dataset = str(SCRIPT_DIR.parent / "sdg" / "sdg_out" / "stellar_peak_raw.jsonl")
 # output_dir = os.getenv("LOCAL_MODEL_PATH", "./granite-fine-tuned-checkpoints")
